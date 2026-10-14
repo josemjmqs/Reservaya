@@ -21,7 +21,8 @@ export class AuthService {
       this.prisma.user.findUnique({ where: { email: dto.email } }),
       this.prisma.business.findUnique({ where: { slug: dto.slug } }),
     ]);
-    if (emailTaken) throw new ConflictException('Ese correo ya está registrado');
+    if (emailTaken)
+      throw new ConflictException('Ese correo ya está registrado');
     if (slugTaken) throw new ConflictException('Ese slug ya está en uso');
 
     const password = await bcrypt.hash(dto.password, 10);
@@ -62,5 +63,24 @@ export class AuthService {
   private async signToken(userId: string, email: string) {
     const accessToken = await this.jwt.signAsync({ sub: userId, email });
     return { accessToken };
+  }
+
+  async me(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        members: {
+          select: {
+            role: true,
+            business: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+    });
+    if (!user) throw new UnauthorizedException();
+    return user;
   }
 }
