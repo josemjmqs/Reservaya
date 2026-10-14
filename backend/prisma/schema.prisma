@@ -13,6 +13,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum MemberRole {
+  OWNER
+  STAFF
+}
+
 model Business {
   id        String   @id @default(cuid())
   name      String
@@ -20,4 +25,28 @@ model Business {
   timezone  String   @default("America/Santiago")
   phone     String?
   createdAt DateTime @default(now())
+  members   Member[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  members   Member[]
+}
+
+model Member {
+  id          String     @id @default(cuid())
+  role        MemberRole
+  bookable    Boolean    @default(true)
+  displayName String
+  userId      String
+  businessId  String
+  user        User       @relation(fields: [userId], references: [id])
+  business    Business   @relation(fields: [businessId], references: [id])
+
+  @@unique([userId, businessId])
+  @@index([businessId])
 }
