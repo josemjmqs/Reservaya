@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import Link from 'next/link';
 
 interface Me {
   name: string;
@@ -15,16 +16,16 @@ export default function DashboardPage() {
   const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
-      router.replace('/login');
+      router.replace("/login");
       return;
     }
-    api<Me>('/auth/me', {}, token)
+    api<Me>("/auth/me", {}, token)
       .then(setMe)
       .catch(() => {
-        localStorage.removeItem('token');
-        router.replace('/login');
+        localStorage.removeItem("token");
+        router.replace("/login");
       });
   }, [router]);
 
@@ -36,10 +37,13 @@ export default function DashboardPage() {
     <main className="mx-auto max-w-2xl p-6">
       <h1 className="text-2xl font-bold">Hola, {me.name}</h1>
       <p className="text-gray-600">Negocio: {business?.name}</p>
+      <Link href="/dashboard/services" className="mt-4 inline-block underline">
+        Administrar servicios
+      </Link>
       <button
         onClick={() => {
-          localStorage.removeItem('token');
-          router.push('/login');
+          localStorage.removeItem("token");
+          router.push("/login");
         }}
         className="mt-4 rounded border px-3 py-1 text-sm"
       >
