@@ -6,9 +6,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { HealthController } from './health/health.controller';
 import { AuthModule } from './auth/auth.module';
 import { ServicesModule } from './services/services.module';
+import { WorkingHoursModule } from './working-hours/working-hours.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, ServicesModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, ServicesModule, WorkingHoursModule],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })

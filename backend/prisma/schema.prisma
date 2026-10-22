@@ -33,14 +33,15 @@ model User {
 }
 
 model Member {
-  id          String     @id @default(cuid())
+  id          String         @id @default(cuid())
   role        MemberRole
-  bookable    Boolean    @default(true)
+  bookable    Boolean        @default(true)
   displayName String
   userId      String
   businessId  String
-  user        User       @relation(fields: [userId], references: [id])
-  business    Business   @relation(fields: [businessId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+  business    Business       @relation(fields: [businessId], references: [id])
+  hours       WorkingHours[]
 
   @@unique([userId, businessId])
   @@index([businessId])
@@ -58,4 +59,15 @@ model Service {
   business    Business @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
+}
+
+model WorkingHours {
+  id       String @id @default(cuid())
+  weekday  Int    // 0 = domingo ... 6 = sábado
+  opensAt  String // "09:00"
+  closesAt String // "18:00"
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  @@unique([memberId, weekday])
 }
