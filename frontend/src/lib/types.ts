@@ -6,3 +6,9 @@ export interface Service {
   price: number | null;
   active: boolean;
 }
+
+export interface WorkingHour {
+  weekday: number;
+  opensAt: string;
+  closesAt: string;
+}

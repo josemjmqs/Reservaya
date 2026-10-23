@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import Link from 'next/link';
+import Link from "next/link";
 
 interface Me {
   name: string;
@@ -37,8 +37,11 @@ export default function DashboardPage() {
     <main className="mx-auto max-w-2xl p-6">
       <h1 className="text-2xl font-bold">Hola, {me.name}</h1>
       <p className="text-gray-600">Negocio: {business?.name}</p>
-      <Link href="/dashboard/services" className="mt-4 inline-block underline">
+      <Link href="/dashboard/services" className="mt-4 block underline">
         Administrar servicios
+      </Link>
+      <Link href="/dashboard/hours" className="mt-4 block underline">
+        Horario de atención
       </Link>
       <button
         onClick={() => {
