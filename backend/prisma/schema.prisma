@@ -23,6 +23,7 @@ model Business {
   services  Service[]
   customers Customer[]
   bookings  Booking[]
+  blocks    TimeBlock[]
 }
 
 model User {
@@ -116,4 +117,16 @@ model Booking {
 
   @@index([businessId, startsAt])
   @@index([memberId, startsAt])
+}
+
+model TimeBlock {
+  id         String   @id @default(cuid())
+  startsAt   DateTime
+  endsAt     DateTime
+  reason     String?
+  businessId String
+  memberId   String?
+  business   Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId, startsAt])
 }
