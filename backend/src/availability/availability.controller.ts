@@ -10,4 +10,9 @@ export class AvailabilityController {
   get(@Param('slug') slug: string, @Query() q: AvailabilityQueryDto) {
     return this.availability.getSlots(slug, q.serviceId, q.date);
   }
+
+  @Get(':slug')
+  getBusiness(@Param('slug') slug: string) {
+    return this.availability.getBusiness(slug);
+  }
 }

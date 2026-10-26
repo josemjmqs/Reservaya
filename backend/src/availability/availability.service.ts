@@ -30,7 +30,7 @@ export class AvailabilityService {
       where: { memberId: member.id, weekday },
     });
     if (!hours) return { slots: [] };
-    
+
     const dayStart = day.startOf('day').toJSDate();
     const dayEnd = day.endOf('day').toJSDate();
 
@@ -63,5 +63,30 @@ export class AvailabilityService {
     });
 
     return { slots: slots.map((s) => s.toISOString()) };
+  }
+
+  async getBusiness(slug: string) {
+    const business = await this.prisma.business.findUnique({
+      where: { slug },
+      select: {
+        name: true,
+        slug: true,
+        timezone: true,
+        phone: true,
+        services: {
+          where: { active: true },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            durationMin: true,
+            price: true,
+          },
+        },
+      },
+    });
+    if (!business) throw new NotFoundException('Negocio no encontrado');
+    return business;
   }
 }
