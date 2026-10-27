@@ -25,6 +25,24 @@ export interface BookingResult {
   id: string;
   startsAt: string;
   endsAt: string;
-  status: string;
+  status: BookingStatus;
   manageToken: string;
+}
+
+export type BookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
+export type SettableStatus = Exclude<BookingStatus, "PENDING">;
+
+export interface AgendaBooking {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  status: BookingStatus;
+  notes: string | null;
+  service: { name: string; durationMin: number };
+  customer: { name: string; email: string; phone: string | null };
 }

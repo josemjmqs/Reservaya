@@ -9,9 +9,10 @@ import { ServicesModule } from './services/services.module';
 import { WorkingHoursModule } from './working-hours/working-hours.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { AgendaModule } from './agenda/agenda.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, ServicesModule, WorkingHoursModule, AvailabilityModule, BookingsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, ServicesModule, WorkingHoursModule, AvailabilityModule, BookingsModule, AgendaModule],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })
