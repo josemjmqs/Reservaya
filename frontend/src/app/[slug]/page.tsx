@@ -3,6 +3,7 @@
 import { use, useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { BookingResult, PublicBusiness } from "@/lib/types";
+import Link from 'next/link';
 
 function todayISO() {
   const d = new Date();
@@ -114,6 +115,12 @@ export default function PublicPage({
             timeZone: business.timezone,
           })}{" "}
           a las {fmt(done.startsAt)} en {business.name}.
+        </p>
+        <p className="mt-4 text-sm">
+          Guarda este enlace para ver o cancelar tu reserva:{" "}
+          <Link href={`/reserva/${done.manageToken}`} className="underline">
+            Administrar mi reserva
+          </Link>
         </p>
       </main>
     );

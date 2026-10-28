@@ -46,3 +46,12 @@ export interface AgendaBooking {
   service: { name: string; durationMin: number };
   customer: { name: string; email: string; phone: string | null };
 }
+
+export interface ManagedBooking {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  status: BookingStatus;
+  service: { name: string; durationMin: number };
+  business: { name: string; timezone: string; phone: string | null };
+}
