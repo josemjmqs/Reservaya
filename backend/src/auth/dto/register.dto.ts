@@ -1,4 +1,19 @@
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotIn,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
+
+const RESERVED_SLUGS = [
+  'login',
+  'register',
+  'dashboard',
+  'reserva',
+  'api',
+  'admin',
+];
 
 export class RegisterDto {
   @IsString()
@@ -20,5 +35,6 @@ export class RegisterDto {
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
     message: 'El slug solo puede tener minúsculas, números y guiones',
   })
+  @IsNotIn(RESERVED_SLUGS, { message: 'Ese slug no está disponible' })
   slug: string;
 }
