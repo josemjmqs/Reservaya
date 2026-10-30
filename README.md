@@ -136,11 +136,30 @@ docker-compose.yml
 
 ## Mejoras pendientes
 
-- Correo de confirmación y recordatorios
-- Múltiples profesionales por negocio
-- Campos personalizados por negocio
-- Pagos de abono
-- Cookies httpOnly en lugar de localStorage para el token
+**Producto**
+
+- Verificar un dominio propio en Resend: hoy el correo de confirmación solo llega al correo de la cuenta de Resend (limitación de `onboarding@resend.dev`). Si no se configura `RESEND_API_KEY`, la app funciona igual y simplemente no envía correos.
+- Notificaciones por WhatsApp (Cloud API de Meta) como segundo canal, aprovechando el `NotificationsService`.
+- Recordatorios automáticos antes de la hora reservada.
+- Edición de servicios (nombre, duración, precio) desde el panel.
+- Múltiples profesionales por negocio y horarios por profesional (el modelo de datos ya lo soporta).
+- Bloqueos de tiempo (vacaciones, feriados) con pantalla de administración.
+- Campos personalizados por negocio (por ejemplo, patente en un taller).
+- Pago de abono al reservar.
+- Política de anticipación mínima para cancelar.
+
+**Técnicas**
+
+- Guardar el token en una cookie `httpOnly` en lugar de `localStorage`, para reducir el riesgo ante XSS.
+- Leer la zona horaria del negocio en la agenda en vez de fijarla en el frontend.
+- Tests de integración con base de datos real (requiere configurar Jest para ESM y un servicio PostgreSQL en el CI).
+- Test de `computeSlots` para los días de cambio de horario de verano en Chile.
+- Tabla de transiciones permitidas entre estados de una reserva.
+- Migrar a Prisma 7 cuando el ecosistema esté estable.
+
+**Limitaciones conocidas del demo**
+
+- El backend corre en el plan gratuito de Render: tras un rato sin uso, la primera carga puede tardar 30-60 segundos.
 
 ## Autor
 
