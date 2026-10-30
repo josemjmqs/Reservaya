@@ -1,13 +1,14 @@
-"use client";
+'use client';
 
-import { use, useCallback, useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import type { BookingResult, PublicBusiness } from "@/lib/types";
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { api } from '@/lib/api';
+import { Button, Card, Input } from '@/components/ui';
+import type { BookingResult, PublicBusiness } from '@/lib/types';
 
 function todayISO() {
   const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
+  const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
@@ -19,12 +20,12 @@ export default function PublicPage({
   const { slug } = use(params);
   const [business, setBusiness] = useState<PublicBusiness | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [serviceId, setServiceId] = useState("");
+  const [serviceId, setServiceId] = useState('');
   const [date, setDate] = useState(todayISO());
   const [slots, setSlots] = useState<string[]>([]);
-  const [startsAt, setStartsAt] = useState("");
-  const [form, setForm] = useState({ name: "", email: "", phone: "" });
-  const [error, setError] = useState("");
+  const [startsAt, setStartsAt] = useState('');
+  const [form, setForm] = useState({ name: '', email: '', phone: '' });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState<BookingResult | null>(null);
 
@@ -34,8 +35,6 @@ export default function PublicPage({
       .catch(() => setNotFound(true));
   }, [slug]);
 
-  // Carga los horarios libres. Devuelve el error (si lo hay) en vez de lanzarlo.
-  // Carga los horarios libres. Si la petición se cancela, no toca el estado.
   const loadSlots = useCallback(
     async (signal?: AbortSignal): Promise<string | null> => {
       if (!serviceId || !date) return null;
@@ -46,20 +45,19 @@ export default function PublicPage({
         );
         if (signal?.aborted) return null;
         setSlots(r.slots);
-        setStartsAt("");
+        setStartsAt('');
         return null;
       } catch (err) {
-        if (signal?.aborted) return null; // cancelada a propósito, no es un error
-        return err instanceof Error ? err.message : "Error inesperado";
+        if (signal?.aborted) return null;
+        return err instanceof Error ? err.message : 'Error inesperado';
       }
     },
     [slug, serviceId, date],
   );
 
-  // Al elegir servicio o fecha: cancela la petición anterior
   useEffect(() => {
     const controller = new AbortController();
-    setError("");
+    setError('');
     loadSlots(controller.signal).then((msg) => {
       if (msg && !controller.signal.aborted) setError(msg);
     });
@@ -68,11 +66,11 @@ export default function PublicPage({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
     try {
       const result = await api<BookingResult>(`/public/${slug}/bookings`, {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           serviceId,
           startsAt,
@@ -83,9 +81,7 @@ export default function PublicPage({
       });
       setDone(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error inesperado";
-      // refresca los horarios por si alguien tomó la hora;
-      // si el refresco falla, se mantiene el error original de la reserva
+      const message = err instanceof Error ? err.message : 'Error inesperado';
       await loadSlots();
       setError(message);
     } finally {
@@ -93,59 +89,67 @@ export default function PublicPage({
     }
   }
 
-  if (notFound) return <p className="p-6">Negocio no encontrado.</p>;
-  if (!business) return <p className="p-6">Cargando...</p>;
+  if (notFound)
+    return <p className="p-6 text-gray-600">Negocio no encontrado.</p>;
+  if (!business) return <p className="p-6 text-gray-600">Cargando...</p>;
 
   const fmt = (iso: string) =>
-    new Date(iso).toLocaleTimeString("es-CL", {
-      hour: "2-digit",
-      minute: "2-digit",
+    new Date(iso).toLocaleTimeString('es-CL', {
+      hour: '2-digit',
+      minute: '2-digit',
       timeZone: business.timezone,
     });
 
   if (done) {
     return (
-      <main className="mx-auto max-w-md p-6">
-        <h1 className="text-2xl font-bold">¡Reserva confirmada!</h1>
-        <p className="mt-2">
-          {new Date(done.startsAt).toLocaleDateString("es-CL", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            timeZone: business.timezone,
-          })}{" "}
-          a las {fmt(done.startsAt)} en {business.name}.
-        </p>
-        <p className="mt-4 text-sm">
-          Guarda este enlace para ver o cancelar tu reserva:{" "}
-          <Link href={`/reserva/${done.manageToken}`} className="underline">
-            Administrar mi reserva
+      <main className="mx-auto max-w-md px-6 py-12">
+        <Card className="p-6 text-center">
+          <p className="text-3xl">✓</p>
+          <h1 className="mt-2 text-xl font-semibold tracking-tight">
+            ¡Reserva confirmada!
+          </h1>
+          <p className="mt-2 text-gray-600">
+            {new Date(done.startsAt).toLocaleDateString('es-CL', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              timeZone: business.timezone,
+            })}{' '}
+            a las {fmt(done.startsAt)} en {business.name}.
+          </p>
+          <Link
+            href={`/reserva/${done.manageToken}`}
+            className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
+          >
+            Ver o cancelar mi reserva
           </Link>
-        </p>
+        </Card>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-bold">{business.name}</h1>
-      <p className="mb-4 text-gray-600">Reserva tu hora online</p>
+    <main className="mx-auto max-w-md px-6 py-10">
+      <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
+      <p className="mb-6 text-gray-600">Reserva tu hora online</p>
 
-      <h2 className="font-semibold">1. Servicio</h2>
-      <div className="my-2 flex flex-col gap-2">
+      <h2 className="mb-2 text-sm font-medium text-gray-700">1. Servicio</h2>
+      <div className="flex flex-col gap-2">
         {business.services.map((s) => (
           <button
             key={s.id}
             type="button"
             onClick={() => setServiceId(s.id)}
-            className={`rounded border p-3 text-left ${
-              serviceId === s.id ? "border-black bg-gray-100" : ""
+            className={`rounded-lg border p-3 text-left transition ${
+              serviceId === s.id
+                ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
+                : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
           >
             <span className="font-medium">{s.name}</span>
             <span className="block text-sm text-gray-600">
               {s.durationMin} min
-              {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
+              {s.price !== null && ` · $${s.price.toLocaleString('es-CL')}`}
             </span>
           </button>
         ))}
@@ -156,13 +160,15 @@ export default function PublicPage({
 
       {serviceId && (
         <>
-          <h2 className="mt-4 font-semibold">2. Día y hora</h2>
-          <input
+          <h2 className="mb-2 mt-6 text-sm font-medium text-gray-700">
+            2. Día y hora
+          </h2>
+          <Input
             type="date"
             value={date}
             min={todayISO()}
             onChange={(e) => setDate(e.target.value)}
-            className="my-2 rounded border p-2"
+            className="mb-3 w-auto"
           />
           <div className="flex flex-wrap gap-2">
             {slots.map((s) => (
@@ -170,8 +176,10 @@ export default function PublicPage({
                 key={s}
                 type="button"
                 onClick={() => setStartsAt(s)}
-                className={`rounded border px-3 py-1 ${
-                  startsAt === s ? "bg-black text-white" : ""
+                className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+                  startsAt === s
+                    ? 'border-indigo-600 bg-indigo-600 text-white'
+                    : 'border-gray-200 bg-white hover:border-indigo-300'
                 }`}
               >
                 {fmt(s)}
@@ -187,40 +195,34 @@ export default function PublicPage({
       )}
 
       {startsAt && (
-        <form onSubmit={submit} className="mt-4 flex flex-col gap-3">
-          <h2 className="font-semibold">3. Tus datos</h2>
-          <input
+        <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-gray-700">3. Tus datos</h2>
+          <Input
             placeholder="Nombre"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="rounded border p-2"
             required
           />
-          <input
+          <Input
             type="email"
             placeholder="Correo"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="rounded border p-2"
             required
           />
-          <input
+          <Input
             placeholder="Teléfono (opcional)"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            className="rounded border p-2"
           />
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            disabled={loading}
-            className="rounded bg-black p-2 text-white disabled:opacity-50"
-          >
-            {loading ? "Reservando..." : "Confirmar reserva"}
-          </button>
+          <Button disabled={loading}>
+            {loading ? 'Reservando...' : 'Confirmar reserva'}
+          </Button>
         </form>
       )}
       {!startsAt && error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+        <p className="mt-3 text-sm text-red-600">{error}</p>
       )}
     </main>
   );
