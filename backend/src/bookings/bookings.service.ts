@@ -8,12 +8,14 @@ import { DateTime } from 'luxon';
 import { AvailabilityService } from '../availability/availability.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class BookingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly availability: AvailabilityService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(slug: string, dto: CreateBookingDto) {
@@ -32,13 +34,10 @@ export class BookingsService {
 
     // La hora debe ser uno de los espacios que el sistema ofrece
     const startsAt = new Date(dto.startsAt);
-    const date = DateTime.fromJSDate(startsAt, { zone: business.timezone })
-      .toISODate()!;
-    const { slots } = await this.availability.getSlots(
-      slug,
-      service.id,
-      date,
-    );
+    const date = DateTime.fromJSDate(startsAt, {
+      zone: business.timezone,
+    }).toISODate()!;
+    const { slots } = await this.availability.getSlots(slug, service.id, date);
     if (!slots.includes(startsAt.toISOString())) {
       throw new ConflictException('Esa hora no está disponible');
     }
@@ -71,6 +70,16 @@ export class BookingsService {
           },
         });
       });
+      // sin await: el cliente no espera al correo
+      void this.notifications.bookingConfirmed({
+        to: dto.email,
+        customerName: dto.name,
+        businessName: business.name,
+        serviceName: service.name,
+        startsAt: booking.startsAt,
+        timezone: business.timezone,
+        manageToken: booking.manageToken,
+      });
       return {
         id: booking.id,
         startsAt: booking.startsAt,
@@ -89,12 +98,15 @@ export class BookingsService {
 
   private isOverlap(e: unknown): boolean {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
-      return JSON.stringify(e.meta ?? {}).includes('23P01') ||
-        e.message.includes('booking_no_overlap');
+      return (
+        JSON.stringify(e.meta ?? {}).includes('23P01') ||
+        e.message.includes('booking_no_overlap')
+      );
     }
     if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      return e.message.includes('booking_no_overlap') ||
-        e.message.includes('23P01');
+      return (
+        e.message.includes('booking_no_overlap') || e.message.includes('23P01')
+      );
     }
     return false;
   }

@@ -1,5 +1,7 @@
 # Reservaya
 
+![CI](https://github.com/josemjmqs/Reservaya/actions/workflows/ci.yml/badge.svg)
+
 Plataforma de reservas online para pequeños negocios (talleres, peluquerías, consultas). Cada negocio tiene su página pública donde sus clientes reservan una hora **sin crear cuenta**, y un panel donde el dueño administra servicios, horarios y agenda.
 
 **Demo:** https://reservaya-gray.vercel.app/taller-demo
