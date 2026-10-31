@@ -1,0 +1,90 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { api } from '@/lib/api';
+import { Button } from '@/components/ui';
+
+interface Me {
+  name: string;
+  members: { business: { name: string; slug: string } }[];
+}
+
+const TABS = [
+  { href: '/dashboard/agenda', label: 'Agenda' },
+  { href: '/dashboard/services', label: 'Servicios' },
+  { href: '/dashboard/hours', label: 'Horario' },
+];
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [me, setMe] = useState<Me | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.replace('/login');
+      return;
+    }
+    api<Me>('/auth/me', {}, token)
+      .then(setMe)
+      .catch(() => {
+        localStorage.removeItem('token');
+        router.replace('/login');
+      });
+  }, [router]);
+
+  if (!me) return <p className="p-6 text-gray-600">Cargando...</p>;
+
+  const business = me.members[0]?.business;
+
+  return (
+    <div className="min-h-screen">
+      <header className="border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3">
+          <div>
+            <p className="font-semibold tracking-tight">{business?.name}</p>
+            <Link
+              href={`/${business?.slug}`}
+              target="_blank"
+              className="text-xs text-indigo-600 hover:underline"
+            >
+              Ver mi página pública ↗
+            </Link>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              localStorage.removeItem('token');
+              router.push('/login');
+            }}
+          >
+            Cerrar sesión
+          </Button>
+        </div>
+        <nav className="mx-auto flex max-w-3xl gap-6 px-6">
+          {TABS.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={`border-b-2 py-2 text-sm font-medium transition ${
+                pathname === t.href
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+      <div className="mx-auto max-w-3xl px-6 py-6">{children}</div>
+    </div>
+  );
+}

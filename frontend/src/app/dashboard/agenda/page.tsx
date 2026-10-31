@@ -1,18 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { api } from "@/lib/api";
 import { useToken } from "@/lib/useToken";
-import type { AgendaBooking, SettableStatus } from "@/lib/types";
+import { Button, Input } from "@/components/ui";
+import type { AgendaBooking, BookingStatus, SettableStatus } from "@/lib/types";
 
 const TZ = "America/Santiago";
-const LABELS: Record<AgendaBooking["status"], string> = {
+
+const LABELS: Record<BookingStatus, string> = {
   PENDING: "Pendiente",
   CONFIRMED: "Confirmada",
   COMPLETED: "Completada",
   CANCELLED: "Cancelada",
   NO_SHOW: "No se presentó",
+};
+
+const BADGE: Record<BookingStatus, string> = {
+  PENDING: "bg-amber-50 text-amber-700 ring-amber-200",
+  CONFIRMED: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+  COMPLETED: "bg-green-50 text-green-700 ring-green-200",
+  CANCELLED: "bg-gray-100 text-gray-600 ring-gray-200",
+  NO_SHOW: "bg-red-50 text-red-700 ring-red-200",
 };
 
 function iso(d: Date) {
@@ -73,71 +82,95 @@ export default function AgendaPage() {
       timeZone: TZ,
     });
 
-  return (
-    <main className="mx-auto max-w-2xl p-6">
-      <Link href="/dashboard" className="text-sm underline">
-        ← Volver
-      </Link>
-      <h1 className="mt-2 text-2xl font-bold">Agenda</h1>
+  const dayLabel = new Date(`${date}T12:00:00`).toLocaleDateString("es-CL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
-      <div className="my-4 flex items-center gap-2">
-        <button onClick={() => shift(-1)} className="rounded border px-3 py-1">
+  return (
+    <div>
+      <h1 className="text-xl font-semibold tracking-tight">Agenda</h1>
+
+      <div className="my-4 flex flex-wrap items-center gap-2">
+        <Button variant="secondary" onClick={() => shift(-1)}>
           ←
-        </button>
-        <input
+        </Button>
+        <Input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="rounded border p-1"
+          className="w-auto"
         />
-        <button onClick={() => shift(1)} className="rounded border px-3 py-1">
+        <Button variant="secondary" onClick={() => shift(1)}>
           →
-        </button>
+        </Button>
+        <Button variant="secondary" onClick={() => setDate(iso(new Date()))}>
+          Hoy
+        </Button>
       </div>
 
-      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+      <p className="mb-3 text-sm capitalize text-gray-600">{dayLabel}</p>
 
-      <ul className="divide-y rounded border">
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+
+      <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
         {bookings.map((b) => (
-          <li key={b.id} className="p-3">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">
-                {time(b.startsAt)} – {time(b.endsAt)} · {b.service.name}
-              </p>
-              <span className="text-sm text-gray-600">{LABELS[b.status]}</span>
+          <li key={b.id} className="p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium">
+                  {time(b.startsAt)} – {time(b.endsAt)}
+                  <span className="font-normal text-gray-600">
+                    {" "}
+                    · {b.service.name}
+                  </span>
+                </p>
+                <p className="mt-0.5 text-sm text-gray-600">
+                  {b.customer.name} · {b.customer.email}
+                  {b.customer.phone && ` · ${b.customer.phone}`}
+                </p>
+              </div>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${BADGE[b.status]}`}
+              >
+                {LABELS[b.status]}
+              </span>
             </div>
-            <p className="text-sm text-gray-600">
-              {b.customer.name} · {b.customer.email}
-              {b.customer.phone && ` · ${b.customer.phone}`}
-            </p>
+
             {(b.status === "CONFIRMED" || b.status === "PENDING") && (
-              <div className="mt-2 flex gap-2 text-sm">
-                <button
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  className="px-3 py-1"
                   onClick={() => setStatus(b.id, "COMPLETED")}
-                  className="rounded border px-2 py-1"
                 >
                   Completada
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="px-3 py-1"
                   onClick={() => setStatus(b.id, "NO_SHOW")}
-                  className="rounded border px-2 py-1"
                 >
                   No se presentó
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="danger"
+                  className="px-3 py-1"
                   onClick={() => setStatus(b.id, "CANCELLED")}
-                  className="rounded border px-2 py-1"
                 >
                   Cancelar
-                </button>
+                </Button>
               </div>
             )}
           </li>
         ))}
         {bookings.length === 0 && (
-          <li className="p-3 text-sm text-gray-600">Sin reservas este día.</li>
+          <li className="p-6 text-center text-sm text-gray-500">
+            Sin reservas este día.
+          </li>
         )}
       </ul>
-    </main>
+    </div>
   );
 }

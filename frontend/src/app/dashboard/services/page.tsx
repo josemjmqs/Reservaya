@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useToken } from '@/lib/useToken';
+import { Button, Card, Input } from '@/components/ui';
 import type { Service } from '@/lib/types';
 
 const empty = { name: '', durationMin: 30, price: '' };
@@ -105,81 +105,81 @@ export default function ServicesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <Link href="/dashboard" className="text-sm underline">
-        ← Volver
-      </Link>
-      <h1 className="mt-2 text-2xl font-bold">Servicios</h1>
+    <div>
+      <h1 className="text-xl font-semibold tracking-tight">Servicios</h1>
 
-      <form onSubmit={create} className="my-4 flex flex-wrap gap-2">
-        <input
-          placeholder="Nombre"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="flex-1 rounded border p-2"
-          required
-        />
-        <input
-          type="number"
-          placeholder="Minutos"
-          value={form.durationMin}
-          onChange={(e) =>
-            setForm({ ...form, durationMin: Number(e.target.value) })
-          }
-          className="w-24 rounded border p-2"
-          required
-        />
-        <input
-          type="number"
-          placeholder="Precio (CLP)"
-          value={form.price}
-          onChange={(e) => setForm({ ...form, price: e.target.value })}
-          className="w-32 rounded border p-2"
-        />
-        <button className="rounded bg-black px-4 text-white">Agregar</button>
-      </form>
+      <Card className="my-4">
+        <form onSubmit={create} className="flex flex-wrap items-center gap-2">
+          <Input
+            placeholder="Nombre del servicio"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="min-w-48 flex-1"
+            required
+          />
+          <Input
+            type="number"
+            placeholder="Minutos"
+            value={form.durationMin}
+            onChange={(e) =>
+              setForm({ ...form, durationMin: Number(e.target.value) })
+            }
+            className="w-24"
+            required
+          />
+          <Input
+            type="number"
+            placeholder="Precio (CLP)"
+            value={form.price}
+            onChange={(e) => setForm({ ...form, price: e.target.value })}
+            className="w-32"
+          />
+          <Button>Agregar</Button>
+        </form>
+      </Card>
 
-      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
-      <ul className="divide-y rounded border">
+      <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
         {services.map((s) =>
           editingId === s.id ? (
-            <li key={s.id} className="flex flex-wrap items-center gap-2 p-3">
-              <input
+            <li key={s.id} className="flex flex-wrap items-center gap-2 p-4">
+              <Input
                 value={edit.name}
                 onChange={(e) => setEdit({ ...edit, name: e.target.value })}
-                className="flex-1 rounded border p-2"
+                className="min-w-48 flex-1"
               />
-              <input
+              <Input
                 type="number"
                 value={edit.durationMin}
                 onChange={(e) =>
                   setEdit({ ...edit, durationMin: Number(e.target.value) })
                 }
-                className="w-24 rounded border p-2"
+                className="w-24"
               />
-              <input
+              <Input
                 type="number"
                 placeholder="Precio"
                 value={edit.price}
                 onChange={(e) => setEdit({ ...edit, price: e.target.value })}
-                className="w-32 rounded border p-2"
+                className="w-32"
               />
-              <button
-                onClick={() => saveEdit(s.id)}
-                className="rounded bg-black px-3 py-1 text-sm text-white"
-              >
+              <Button className="px-3 py-1" onClick={() => saveEdit(s.id)}>
                 Guardar
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                className="px-3 py-1"
                 onClick={() => setEditingId(null)}
-                className="rounded border px-3 py-1 text-sm"
               >
                 Cancelar
-              </button>
+              </Button>
             </li>
           ) : (
-            <li key={s.id} className="flex items-center justify-between p-3">
+            <li
+              key={s.id}
+              className="flex items-center justify-between gap-3 p-4"
+            >
               <div className={s.active ? '' : 'opacity-50'}>
                 <p className="font-medium">{s.name}</p>
                 <p className="text-sm text-gray-600">
@@ -189,28 +189,30 @@ export default function ServicesPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="secondary"
+                  className="px-3 py-1"
                   onClick={() => startEdit(s)}
-                  className="rounded border px-3 py-1 text-sm"
                 >
                   Editar
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="px-3 py-1"
                   onClick={() => toggle(s)}
-                  className="rounded border px-3 py-1 text-sm"
                 >
                   {s.active ? 'Desactivar' : 'Activar'}
-                </button>
+                </Button>
               </div>
             </li>
           ),
         )}
         {services.length === 0 && (
-          <li className="p-3 text-sm text-gray-600">
+          <li className="p-6 text-center text-sm text-gray-500">
             Aún no tienes servicios.
           </li>
         )}
       </ul>
-    </main>
+    </div>
   );
 }
