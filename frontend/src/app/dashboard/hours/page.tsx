@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useToken } from '@/lib/useToken';
+import { Button, Input } from '@/components/ui';
 import type { WorkingHour } from '@/lib/types';
 
 // Orden de la semana para mostrar: lunes primero (weekday 0 = domingo)
@@ -23,7 +23,11 @@ interface DayState {
   closesAt: string;
 }
 
-const defaultDay: DayState = { enabled: false, opensAt: '09:00', closesAt: '18:00' };
+const defaultDay: DayState = {
+  enabled: false,
+  opensAt: '09:00',
+  closesAt: '18:00',
+};
 
 export default function HoursPage() {
   const token = useToken();
@@ -82,59 +86,67 @@ export default function HoursPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl p-6">
-      <Link href="/dashboard" className="text-sm underline">
-        ← Volver
-      </Link>
-      <h1 className="mt-2 text-2xl font-bold">Horario de atención</h1>
+    <div>
+      <h1 className="text-xl font-semibold tracking-tight">
+        Horario de atención
+      </h1>
+      <p className="mt-1 text-sm text-gray-600">
+        Marca los días en que atiendes y define el horario de cada uno.
+      </p>
 
-      <ul className="my-4 divide-y rounded border">
+      <ul className="my-4 divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
         {DAYS.map(({ weekday, label }) => {
           const day = days[weekday];
           return (
-            <li key={weekday} className="flex items-center gap-3 p-3">
-              <label className="flex w-36 items-center gap-2">
+            <li
+              key={weekday}
+              className="flex flex-wrap items-center gap-3 p-4"
+            >
+              <label className="flex w-36 cursor-pointer items-center gap-3 font-medium">
                 <input
                   type="checkbox"
                   checked={day.enabled}
-                  onChange={(e) => update(weekday, { enabled: e.target.checked })}
+                  onChange={(e) =>
+                    update(weekday, { enabled: e.target.checked })
+                  }
+                  className="h-4 w-4 rounded border-gray-300 accent-indigo-600"
                 />
                 {label}
               </label>
               {day.enabled ? (
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="time"
                     value={day.opensAt}
-                    onChange={(e) => update(weekday, { opensAt: e.target.value })}
-                    className="rounded border p-1"
+                    onChange={(e) =>
+                      update(weekday, { opensAt: e.target.value })
+                    }
+                    className="w-auto"
                   />
-                  <span>a</span>
-                  <input
+                  <span className="text-sm text-gray-500">a</span>
+                  <Input
                     type="time"
                     value={day.closesAt}
-                    onChange={(e) => update(weekday, { closesAt: e.target.value })}
-                    className="rounded border p-1"
+                    onChange={(e) =>
+                      update(weekday, { closesAt: e.target.value })
+                    }
+                    className="w-auto"
                   />
                 </div>
               ) : (
-                <span className="text-sm text-gray-500">Cerrado</span>
+                <span className="text-sm text-gray-400">Cerrado</span>
               )}
             </li>
           );
         })}
       </ul>
 
-      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-      {saved && <p className="mb-2 text-sm text-green-700">Horario guardado.</p>}
+      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+      {saved && <p className="mb-3 text-sm text-green-700">Horario guardado.</p>}
 
-      <button
-        onClick={save}
-        disabled={saving}
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-      >
+      <Button onClick={save} disabled={saving}>
         {saving ? 'Guardando...' : 'Guardar horario'}
-      </button>
-    </main>
+      </Button>
+    </div>
   );
 }
