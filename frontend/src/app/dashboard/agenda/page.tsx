@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { useToken } from "@/lib/useToken";
 import { Button, Input } from "@/components/ui";
 import type { AgendaBooking, BookingStatus, SettableStatus } from "@/lib/types";
 
@@ -30,25 +29,21 @@ function iso(d: Date) {
 }
 
 export default function AgendaPage() {
-  const token = useToken();
   const [date, setDate] = useState(iso(new Date()));
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    if (!token) return;
     try {
       setBookings(
         await api<AgendaBooking[]>(
           `/agenda?from=${date}&to=${date}`,
-          {},
-          token,
         ),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error inesperado");
     }
-  }, [token, date]);
+  }, [date]);
 
   useEffect(() => {
     setError("");
@@ -67,7 +62,6 @@ export default function AgendaPage() {
       await api(
         `/agenda/${id}/status`,
         { method: "PATCH", body: JSON.stringify({ status }) },
-        token,
       );
       await load();
     } catch (e) {
