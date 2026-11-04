@@ -2,11 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { useToken } from '@/lib/useToken';
 import { Button, Input } from '@/components/ui';
 import type { WorkingHour } from '@/lib/types';
 
-// Orden de la semana para mostrar: lunes primero (weekday 0 = domingo)
 const DAYS = [
   { weekday: 1, label: 'Lunes' },
   { weekday: 2, label: 'Martes' },
@@ -30,7 +28,6 @@ const defaultDay: DayState = {
 };
 
 export default function HoursPage() {
-  const token = useToken();
   const [days, setDays] = useState<Record<number, DayState>>(
     Object.fromEntries(DAYS.map((d) => [d.weekday, defaultDay])),
   );
@@ -39,8 +36,7 @@ export default function HoursPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
-    api<WorkingHour[]>('/working-hours', {}, token)
+    api<WorkingHour[]>('/working-hours')
       .then((rows) => {
         setDays((prev) => {
           const next = { ...prev };
@@ -55,7 +51,7 @@ export default function HoursPage() {
         });
       })
       .catch((e) => setError(e.message));
-  }, [token]);
+  }, []);
 
   function update(weekday: number, patch: Partial<DayState>) {
     setSaved(false);
@@ -74,8 +70,7 @@ export default function HoursPage() {
       }));
       await api(
         '/working-hours',
-        { method: 'PUT', body: JSON.stringify({ days: payload }) },
-        token,
+        { method: 'PUT', body: JSON.stringify({ days: payload }) }
       );
       setSaved(true);
     } catch (err) {

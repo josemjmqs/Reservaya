@@ -17,11 +17,10 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const { accessToken } = await api<{ accessToken: string }>(
-        "/auth/login",
-        { method: "POST", body: JSON.stringify({ email, password }) },
-      );
-      localStorage.setItem("token", accessToken);
+      await api("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado");

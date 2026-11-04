@@ -159,7 +159,7 @@ docker-compose.yml
 
 **Limitaciones conocidas del demo**
 
-- El backend corre en el plan gratuito de Render: tras un rato sin uso, la primera carga puede tardar 30-60 segundos.
+- El backend corre en el plan gratuito de Render: tras un rato sin uso, la primera carga puede tardar 30-60 segundos.   
 
 ## Autor
 

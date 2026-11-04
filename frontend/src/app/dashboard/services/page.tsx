@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { useToken } from '@/lib/useToken';
 import { Button, Card, Input } from '@/components/ui';
 import type { Service } from '@/lib/types';
 
@@ -15,7 +14,6 @@ interface EditState {
 }
 
 export default function ServicesPage() {
-  const token = useToken();
   const [services, setServices] = useState<Service[]>([]);
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -23,9 +21,8 @@ export default function ServicesPage() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    if (!token) return;
-    setServices(await api<Service[]>('/services', {}, token));
-  }, [token]);
+    setServices(await api<Service[]>('/services'));
+  }, []);
 
   useEffect(() => {
     load().catch((e) => setError(e.message));
@@ -44,8 +41,7 @@ export default function ServicesPage() {
             durationMin: Number(form.durationMin),
             ...(form.price !== '' && { price: Number(form.price) }),
           }),
-        },
-        token,
+        }
       );
       setForm(empty);
       await load();
@@ -76,8 +72,7 @@ export default function ServicesPage() {
             durationMin: Number(edit.durationMin),
             ...(edit.price !== '' && { price: Number(edit.price) }),
           }),
-        },
-        token,
+        }
       );
       setEditingId(null);
       await load();
@@ -90,12 +85,11 @@ export default function ServicesPage() {
     setError('');
     try {
       if (s.active) {
-        await api(`/services/${s.id}`, { method: 'DELETE' }, token);
+        await api(`/services/${s.id}`, { method: 'DELETE' });
       } else {
         await api(
           `/services/${s.id}`,
-          { method: 'PATCH', body: JSON.stringify({ active: true }) },
-          token,
+          { method: 'PATCH', body: JSON.stringify({ active: true }) }
         );
       }
       await load();
