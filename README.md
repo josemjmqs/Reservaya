@@ -60,6 +60,8 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 
 **Seguridad.** Contraseñas con bcrypt, validación de DTOs con whitelist, rate limiting (más estricto en login y registro), slugs reservados, CORS restringido y respuestas públicas que no exponen datos de otros clientes.
 
+**Sesión con cookie `httpOnly`.** El JWT viaja en una cookie `HttpOnly; Secure; SameSite=Lax`, inaccesible desde JavaScript, lo que mitiga el robo de token por XSS. Para que la cookie sea first-party, el frontend proxea `/api/*` hacia el backend con un rewrite de Next.js, evitando los problemas de cookies entre dominios.
+
 ## Correrlo en local
 
 Requisitos: Node 22 y Docker Desktop.
@@ -150,7 +152,6 @@ docker-compose.yml
 
 **Técnicas**
 
-- Guardar el token en una cookie `httpOnly` en lugar de `localStorage`, para reducir el riesgo ante XSS.
 - Leer la zona horaria del negocio en la agenda en vez de fijarla en el frontend.
 - Tests de integración con base de datos real (requiere configurar Jest para ESM y un servicio PostgreSQL en el CI).
 - Test de `computeSlots` para los días de cambio de horario de verano en Chile.
