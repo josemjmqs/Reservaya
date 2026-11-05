@@ -36,10 +36,9 @@ export default function AgendaPage() {
   const load = useCallback(async () => {
     try {
       setBookings(
-        await api<AgendaBooking[]>(
-          `/agenda?from=${date}&to=${date}`,
-        ),
+        await api<AgendaBooking[]>(`/agenda?from=${date}&to=${date}`),
       );
+      setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error inesperado");
     }
@@ -48,6 +47,20 @@ export default function AgendaPage() {
   useEffect(() => {
     setError("");
     load();
+  }, [load]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") load();
+    };
+
+    const id = setInterval(refresh, 30000);
+    document.addEventListener("visibilitychange", refresh);
+
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [load]);
 
   function shift(days: number) {
@@ -59,10 +72,10 @@ export default function AgendaPage() {
   async function setStatus(id: string, status: SettableStatus) {
     setError("");
     try {
-      await api(
-        `/agenda/${id}/status`,
-        { method: "PATCH", body: JSON.stringify({ status }) },
-      );
+      await api(`/agenda/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error inesperado");
@@ -101,6 +114,9 @@ export default function AgendaPage() {
         </Button>
         <Button variant="secondary" onClick={() => setDate(iso(new Date()))}>
           Hoy
+        </Button>
+        <Button variant="secondary" onClick={load}>
+          Actualizar
         </Button>
       </div>
 
