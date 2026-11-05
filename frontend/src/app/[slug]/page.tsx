@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { use, useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { api } from '@/lib/api';
-import { Button, Card, Input } from '@/components/ui';
-import type { BookingResult, PublicBusiness } from '@/lib/types';
+import { use, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { api } from "@/lib/api";
+import { Button, Card, Input } from "@/components/ui";
+import type { BookingResult, PublicBusiness } from "@/lib/types";
+import { formatTotal } from "@/lib/format";
 
 function todayISO() {
   const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
+  const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
@@ -20,12 +21,12 @@ export default function PublicPage({
   const { slug } = use(params);
   const [business, setBusiness] = useState<PublicBusiness | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [serviceId, setServiceId] = useState('');
+  const [serviceId, setServiceId] = useState("");
   const [date, setDate] = useState(todayISO());
   const [slots, setSlots] = useState<string[]>([]);
-  const [startsAt, setStartsAt] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', phone: '' });
-  const [error, setError] = useState('');
+  const [startsAt, setStartsAt] = useState("");
+  const [form, setForm] = useState({ name: "", email: "", phone: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState<BookingResult | null>(null);
 
@@ -45,11 +46,11 @@ export default function PublicPage({
         );
         if (signal?.aborted) return null;
         setSlots(r.slots);
-        setStartsAt('');
+        setStartsAt("");
         return null;
       } catch (err) {
         if (signal?.aborted) return null;
-        return err instanceof Error ? err.message : 'Error inesperado';
+        return err instanceof Error ? err.message : "Error inesperado";
       }
     },
     [slug, serviceId, date],
@@ -57,7 +58,7 @@ export default function PublicPage({
 
   useEffect(() => {
     const controller = new AbortController();
-    setError('');
+    setError("");
     loadSlots(controller.signal).then((msg) => {
       if (msg && !controller.signal.aborted) setError(msg);
     });
@@ -66,11 +67,11 @@ export default function PublicPage({
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
       const result = await api<BookingResult>(`/public/${slug}/bookings`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           serviceId,
           startsAt,
@@ -81,7 +82,7 @@ export default function PublicPage({
       });
       setDone(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error inesperado';
+      const message = err instanceof Error ? err.message : "Error inesperado";
       await loadSlots();
       setError(message);
     } finally {
@@ -94,9 +95,9 @@ export default function PublicPage({
   if (!business) return <p className="p-6 text-gray-600">Cargando...</p>;
 
   const fmt = (iso: string) =>
-    new Date(iso).toLocaleTimeString('es-CL', {
-      hour: '2-digit',
-      minute: '2-digit',
+    new Date(iso).toLocaleTimeString("es-CL", {
+      hour: "2-digit",
+      minute: "2-digit",
       timeZone: business.timezone,
     });
 
@@ -109,12 +110,12 @@ export default function PublicPage({
             ¡Reserva confirmada!
           </h1>
           <p className="mt-2 text-gray-600">
-            {new Date(done.startsAt).toLocaleDateString('es-CL', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
+            {new Date(done.startsAt).toLocaleDateString("es-CL", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
               timeZone: business.timezone,
-            })}{' '}
+            })}{" "}
             a las {fmt(done.startsAt)} en {business.name}.
           </p>
           <Link
@@ -142,14 +143,16 @@ export default function PublicPage({
             onClick={() => setServiceId(s.id)}
             className={`rounded-lg border p-3 text-left transition ${
               serviceId === s.id
-                ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
+                : "border-gray-200 bg-white hover:border-gray-300"
             }`}
           >
             <span className="font-medium">{s.name}</span>
             <span className="block text-sm text-gray-600">
-              {s.durationMin} min
-              {s.price !== null && ` · $${s.price.toLocaleString('es-CL')}`}
+              {s.durationMin} min de atención
+              {s.totalMin &&
+                ` · Tiempo total estimado: ${formatTotal(s.totalMin)}`}
+              {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
             </span>
           </button>
         ))}
@@ -178,8 +181,8 @@ export default function PublicPage({
                 onClick={() => setStartsAt(s)}
                 className={`rounded-lg border px-3 py-1.5 text-sm transition ${
                   startsAt === s
-                    ? 'border-indigo-600 bg-indigo-600 text-white'
-                    : 'border-gray-200 bg-white hover:border-indigo-300'
+                    ? "border-indigo-600 bg-indigo-600 text-white"
+                    : "border-gray-200 bg-white hover:border-indigo-300"
                 }`}
               >
                 {fmt(s)}
@@ -217,7 +220,7 @@ export default function PublicPage({
           />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button disabled={loading}>
-            {loading ? 'Reservando...' : 'Confirmar reserva'}
+            {loading ? "Reservando..." : "Confirmar reserva"}
           </Button>
         </form>
       )}

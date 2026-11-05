@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Button, Card, Input } from '@/components/ui';
+import { formatTotal } from '@/lib/format';
 import type { Service } from '@/lib/types';
 
-const empty = { name: '', durationMin: 30, price: '' };
+const empty = { name: '', durationMin: 30, totalMin: '', price: '' };
 
 interface EditState {
   name: string;
   durationMin: number;
+  totalMin: string;
   price: string;
 }
 
@@ -32,17 +34,15 @@ export default function ServicesPage() {
     e.preventDefault();
     setError('');
     try {
-      await api(
-        '/services',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            name: form.name,
-            durationMin: Number(form.durationMin),
-            ...(form.price !== '' && { price: Number(form.price) }),
-          }),
-        }
-      );
+      await api('/services', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: form.name,
+          durationMin: Number(form.durationMin),
+          ...(form.totalMin !== '' && { totalMin: Number(form.totalMin) }),
+          ...(form.price !== '' && { price: Number(form.price) }),
+        }),
+      });
       setForm(empty);
       await load();
     } catch (err) {
@@ -56,6 +56,7 @@ export default function ServicesPage() {
     setEdit({
       name: s.name,
       durationMin: s.durationMin,
+      totalMin: s.totalMin === null ? '' : String(s.totalMin),
       price: s.price === null ? '' : String(s.price),
     });
   }
@@ -63,17 +64,15 @@ export default function ServicesPage() {
   async function saveEdit(id: string) {
     setError('');
     try {
-      await api(
-        `/services/${id}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({
-            name: edit.name,
-            durationMin: Number(edit.durationMin),
-            ...(edit.price !== '' && { price: Number(edit.price) }),
-          }),
-        }
-      );
+      await api(`/services/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: edit.name,
+          durationMin: Number(edit.durationMin),
+          ...(edit.totalMin !== '' && { totalMin: Number(edit.totalMin) }),
+          ...(edit.price !== '' && { price: Number(edit.price) }),
+        }),
+      });
       setEditingId(null);
       await load();
     } catch (err) {
@@ -87,10 +86,10 @@ export default function ServicesPage() {
       if (s.active) {
         await api(`/services/${s.id}`, { method: 'DELETE' });
       } else {
-        await api(
-          `/services/${s.id}`,
-          { method: 'PATCH', body: JSON.stringify({ active: true }) }
-        );
+        await api(`/services/${s.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ active: true }),
+        });
       }
       await load();
     } catch (err) {
@@ -113,13 +112,22 @@ export default function ServicesPage() {
           />
           <Input
             type="number"
-            placeholder="Minutos"
+            placeholder="Min. de atención"
+            title="Minutos que bloquean tu agenda"
             value={form.durationMin}
             onChange={(e) =>
               setForm({ ...form, durationMin: Number(e.target.value) })
             }
-            className="w-24"
+            className="w-36"
             required
+          />
+          <Input
+            type="number"
+            placeholder="Duración total (opcional)"
+            title="Minutos totales del trabajo; es solo informativo"
+            value={form.totalMin}
+            onChange={(e) => setForm({ ...form, totalMin: e.target.value })}
+            className="w-52"
           />
           <Input
             type="number"
@@ -145,11 +153,21 @@ export default function ServicesPage() {
               />
               <Input
                 type="number"
+                placeholder="Min. de atención"
                 value={edit.durationMin}
                 onChange={(e) =>
                   setEdit({ ...edit, durationMin: Number(e.target.value) })
                 }
-                className="w-24"
+                className="w-36"
+              />
+              <Input
+                type="number"
+                placeholder="Duración total (opcional)"
+                value={edit.totalMin}
+                onChange={(e) =>
+                  setEdit({ ...edit, totalMin: e.target.value })
+                }
+                className="w-52"
               />
               <Input
                 type="number"
@@ -177,7 +195,8 @@ export default function ServicesPage() {
               <div className={s.active ? '' : 'opacity-50'}>
                 <p className="font-medium">{s.name}</p>
                 <p className="text-sm text-gray-600">
-                  {s.durationMin} min
+                  {s.durationMin} min de atención
+                  {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
                   {s.price !== null && ` · $${s.price.toLocaleString('es-CL')}`}
                   {!s.active && ' · Desactivado'}
                 </p>
