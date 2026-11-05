@@ -3,6 +3,7 @@ export interface Service {
   name: string;
   description: string | null;
   durationMin: number;
+  totalMin: number | null;
   price: number | null;
   active: boolean;
 }

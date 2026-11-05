@@ -81,6 +81,7 @@ export class AvailabilityService {
             name: true,
             description: true,
             durationMin: true,
+            totalMin: true,
             price: true,
           },
         },

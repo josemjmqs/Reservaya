@@ -62,6 +62,8 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 
 **Sesión con cookie `httpOnly`.** El JWT viaja en una cookie `HttpOnly; Secure; SameSite=Lax`, inaccesible desde JavaScript, lo que mitiga el robo de token por XSS. Para que la cookie sea first-party, el frontend proxea `/api/*` hacia el backend con un rewrite de Next.js, evitando los problemas de cookies entre dominios.
 
+**Tests de integración contra PostgreSQL real.** La garantía anti-doble reserva se prueba en el CI con una base PostgreSQL 16 (servicio de GitHub Actions), incluyendo 10 peticiones simultáneas a la misma hora donde solo una prevalece.
+
 ## Correrlo en local
 
 Requisitos: Node 22 y Docker Desktop.
@@ -153,7 +155,7 @@ docker-compose.yml
 **Técnicas**
 
 - Leer la zona horaria del negocio en la agenda en vez de fijarla en el frontend.
-- Tests de integración con base de datos real (requiere configurar Jest para ESM y un servicio PostgreSQL en el CI).
+- Probar BookingsService de punta a punta con @nestjs/testing (requiere configurar Jest para ESM)
 - Test de `computeSlots` para los días de cambio de horario de verano en Chile.
 - Tabla de transiciones permitidas entre estados de una reserva.
 - Migrar a Prisma 7 cuando el ecosistema esté estable.
