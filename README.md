@@ -24,11 +24,12 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 - Elige servicio, día y hora entre los espacios realmente libres
 - Reserva con nombre, correo y teléfono
 - Ve y cancela su reserva con un enlace privado
+- Ve el tiempo total estimado de cada servicio
 
 **Negocio**
 
 - Registro y login (JWT)
-- Gestión de servicios (duración, precio, activar/desactivar)
+- Gestión de servicios (tiempo de atención, duración total estimada, precio, activar/desactivar y edición)
 - Horario semanal de atención
 - Agenda diaria con cambio de estado (completada, no se presentó, cancelada)
 
@@ -63,6 +64,8 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 **Sesión con cookie `httpOnly`.** El JWT viaja en una cookie `HttpOnly; Secure; SameSite=Lax`, inaccesible desde JavaScript, lo que mitiga el robo de token por XSS. Para que la cookie sea first-party, el frontend proxea `/api/*` hacia el backend con un rewrite de Next.js, evitando los problemas de cookies entre dominios.
 
 **Tests de integración contra PostgreSQL real.** La garantía anti-doble reserva se prueba en el CI con una base PostgreSQL 16 (servicio de GitHub Actions), incluyendo 10 peticiones simultáneas a la misma hora donde solo una prevalece.
+
+**Tiempo de atención vs. duración total.** Cada servicio tiene `durationMin` (el tiempo que el profesional está ocupado, que bloquea la agenda y alimenta la restricción anti-solape) y `totalMin` opcional (duración total del trabajo, solo informativa). Así un taller puede recibir varios vehículos el mismo día aunque una reparación tarde un día completo, mientras que un corte de pelo bloquea la hora entera.
 
 ## Correrlo en local
 
@@ -159,6 +162,8 @@ docker-compose.yml
 - Test de `computeSlots` para los días de cambio de horario de verano en Chile.
 - Tabla de transiciones permitidas entre estados de una reserva.
 - Migrar a Prisma 7 cuando el ecosistema esté estable.
+- Permitir quitar un precio o una duración total ya definidos (hoy solo se pueden modificar).
+- Modelar capacidad real (varios boxes o puestos simultáneos) con múltiples profesionales por negocio.
 
 **Limitaciones conocidas del demo**
 
