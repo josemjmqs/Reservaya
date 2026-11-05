@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button, Card, Input } from "@/components/ui";
 import type { BookingResult, PublicBusiness } from "@/lib/types";
-import { formatTotal } from "@/lib/format";
+import { publicDuration } from "@/lib/format";
 
 function todayISO() {
   const d = new Date();
@@ -149,9 +149,7 @@ export default function PublicPage({
           >
             <span className="font-medium">{s.name}</span>
             <span className="block text-sm text-gray-600">
-              {s.durationMin} min de atención
-              {s.totalMin &&
-                ` · Tiempo total estimado: ${formatTotal(s.totalMin)}`}
+              {publicDuration(s.durationMin, s.totalMin)}
               {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
             </span>
           </button>
@@ -166,6 +164,14 @@ export default function PublicPage({
           <h2 className="mb-2 mt-6 text-sm font-medium text-gray-700">
             2. Día y hora
           </h2>
+          {(() => {
+            const s = business.services.find((x) => x.id === serviceId);
+            return s?.totalMin && s.totalMin !== s.durationMin ? (
+              <p className="mb-2 text-xs text-gray-500">
+                Elige la hora en que llegarás al local.
+              </p>
+            ) : null;
+          })()}
           <Input
             type="date"
             value={date}
