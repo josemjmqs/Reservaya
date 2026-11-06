@@ -22,14 +22,27 @@ export class AgendaService {
     return member.business;
   }
 
-  async list(userId: string, from: string, to: string) {
+  async list(userId: string, from: string, to: string, memberId?: string) {
     const business = await this.getBusiness(userId);
-    const start = DateTime.fromISO(from, { zone: business.timezone }).startOf('day');
+
+    // Si se filtra por profesional, debe ser de tu negocio (404 si no)
+    if (memberId) {
+      const target = await this.prisma.member.findFirst({
+        where: { id: memberId, businessId: business.id },
+        select: { id: true },
+      });
+      if (!target) throw new NotFoundException('Profesional no encontrado');
+    }
+
+    const start = DateTime.fromISO(from, { zone: business.timezone }).startOf(
+      'day',
+    );
     const end = DateTime.fromISO(to, { zone: business.timezone }).endOf('day');
 
     return this.prisma.booking.findMany({
       where: {
         businessId: business.id,
+        ...(memberId && { memberId }),
         startsAt: { gte: start.toJSDate(), lte: end.toJSDate() },
       },
       orderBy: { startsAt: 'asc' },
@@ -41,6 +54,7 @@ export class AgendaService {
         notes: true,
         service: { select: { name: true, durationMin: true } },
         customer: { select: { name: true, email: true, phone: true } },
+        member: { select: { id: true, displayName: true } },
       },
     });
   }

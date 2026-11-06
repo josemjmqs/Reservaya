@@ -45,6 +45,7 @@ export interface AgendaBooking {
   status: BookingStatus;
   notes: string | null;
   service: { name: string; durationMin: number };
+  member: { id: string; displayName: string };
   customer: { name: string; email: string; phone: string | null };
 }
 
