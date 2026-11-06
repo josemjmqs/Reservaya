@@ -102,6 +102,8 @@ export default function PublicPage({
     });
 
   if (done) {
+    const link = `${window.location.origin}/reserva/${done.manageToken}`;
+
     return (
       <main className="mx-auto max-w-md px-6 py-12">
         <Card className="p-6 text-center">
@@ -118,12 +120,28 @@ export default function PublicPage({
             })}{" "}
             a las {fmt(done.startsAt)} en {business.name}.
           </p>
-          <Link
-            href={`/reserva/${done.manageToken}`}
-            className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:underline"
-          >
-            Ver o cancelar mi reserva
-          </Link>
+
+          <div className="mt-5 rounded-lg bg-gray-50 p-3 text-left">
+            <p className="text-sm font-medium text-gray-700">
+              Guarda este enlace para ver o cancelar tu reserva
+            </p>
+            <p className="mt-1 break-all text-xs text-gray-500">{link}</p>
+            <div className="mt-3 flex gap-2">
+              <Link
+                href={`/reserva/${done.manageToken}`}
+                className="text-sm font-medium text-indigo-600 hover:underline"
+              >
+                Abrir mi reserva
+              </Link>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText(link)}
+                className="text-sm font-medium text-gray-600 hover:underline"
+              >
+                Copiar enlace
+              </button>
+            </div>
+          </div>
         </Card>
       </main>
     );
