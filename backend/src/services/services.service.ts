@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -19,7 +23,17 @@ export class ServicesService {
 
   async create(userId: string, dto: CreateServiceDto) {
     const businessId = await this.getBusinessId(userId);
-    return this.prisma.service.create({ data: { ...dto, businessId } });
+    const owners = await this.prisma.member.findMany({
+      where: { businessId, role: 'OWNER' },
+      select: { id: true },
+    });
+    return this.prisma.service.create({
+      data: {
+        ...dto,
+        businessId,
+        members: { create: owners.map((o) => ({ memberId: o.id })) },
+      },
+    });
   }
 
   async findAll(userId: string) {
