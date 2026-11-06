@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { Button, Input } from '@/components/ui';
-import type { WorkingHour } from '@/lib/types';
+import type { TeamMember, WorkingHour } from '@/lib/types';
 
+// Orden de la semana para mostrar: lunes primero (weekday 0 = domingo)
 const DAYS = [
   { weekday: 1, label: 'Lunes' },
   { weekday: 2, label: 'Martes' },
@@ -27,31 +30,52 @@ const defaultDay: DayState = {
   closesAt: '18:00',
 };
 
-export default function HoursPage() {
-  const [days, setDays] = useState<Record<number, DayState>>(
-    Object.fromEntries(DAYS.map((d) => [d.weekday, defaultDay])),
-  );
+const emptyWeek = () =>
+  Object.fromEntries(DAYS.map((d) => [d.weekday, defaultDay])) as Record<
+    number,
+    DayState
+  >;
+
+function HoursContent() {
+  const memberId = useSearchParams().get('memberId');
+  const [memberName, setMemberName] = useState('');
+  const [days, setDays] = useState<Record<number, DayState>>(emptyWeek());
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api<WorkingHour[]>('/working-hours')
+    setError('');
+    setSaved(false);
+
+    const url = memberId
+      ? `/working-hours?memberId=${memberId}`
+      : '/working-hours';
+
+    api<WorkingHour[]>(url)
       .then((rows) => {
-        setDays((prev) => {
-          const next = { ...prev };
-          for (const r of rows) {
-            next[r.weekday] = {
-              enabled: true,
-              opensAt: r.opensAt,
-              closesAt: r.closesAt,
-            };
-          }
-          return next;
-        });
+        const next = emptyWeek();
+        for (const r of rows) {
+          next[r.weekday] = {
+            enabled: true,
+            opensAt: r.opensAt,
+            closesAt: r.closesAt,
+          };
+        }
+        setDays(next);
       })
       .catch((e) => setError(e.message));
-  }, []);
+
+    // Nombre del profesional para el título
+    api<TeamMember[]>('/members')
+      .then((list) => {
+        const m = memberId
+          ? list.find((x) => x.id === memberId)
+          : list.find((x) => x.role === 'OWNER');
+        setMemberName(m?.displayName ?? '');
+      })
+      .catch(() => {});
+  }, [memberId]);
 
   function update(weekday: number, patch: Partial<DayState>) {
     setSaved(false);
@@ -68,10 +92,10 @@ export default function HoursPage() {
         opensAt: days[d.weekday].opensAt,
         closesAt: days[d.weekday].closesAt,
       }));
-      await api(
-        '/working-hours',
-        { method: 'PUT', body: JSON.stringify({ days: payload }) }
-      );
+      await api('/working-hours', {
+        method: 'PUT',
+        body: JSON.stringify({ ...(memberId && { memberId }), days: payload }),
+      });
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error inesperado');
@@ -82,11 +106,19 @@ export default function HoursPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold tracking-tight">
-        Horario de atención
+      {memberId && (
+        <Link
+          href="/dashboard/team"
+          className="text-sm text-indigo-600 hover:underline"
+        >
+          ← Volver al equipo
+        </Link>
+      )}
+      <h1 className="mt-1 text-xl font-semibold tracking-tight">
+        Horario de atención{memberName && ` · ${memberName}`}
       </h1>
       <p className="mt-1 text-sm text-gray-600">
-        Marca los días en que atiendes y define el horario de cada uno.
+        Marca los días en que atiende y define el horario de cada uno.
       </p>
 
       <ul className="my-4 divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -137,11 +169,21 @@ export default function HoursPage() {
       </ul>
 
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-      {saved && <p className="mb-3 text-sm text-green-700">Horario guardado.</p>}
+      {saved && (
+        <p className="mb-3 text-sm text-green-700">Horario guardado.</p>
+      )}
 
       <Button onClick={save} disabled={saving}>
         {saving ? 'Guardando...' : 'Guardar horario'}
       </Button>
     </div>
+  );
+}
+
+export default function HoursPage() {
+  return (
+    <Suspense fallback={null}>
+      <HoursContent />
+    </Suspense>
   );
 }

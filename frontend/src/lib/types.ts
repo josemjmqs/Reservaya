@@ -57,3 +57,12 @@ export interface ManagedBooking {
   service: { name: string; durationMin: number };
   business: { name: string; timezone: string; phone: string | null };
 }
+
+export interface TeamMember {
+  id: string;
+  displayName: string;
+  role: 'OWNER' | 'STAFF';
+  bookable: boolean;
+  active: boolean;
+  services: { serviceId: string }[];
+}

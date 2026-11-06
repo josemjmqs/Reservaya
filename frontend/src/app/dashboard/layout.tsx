@@ -14,6 +14,7 @@ interface Me {
 const TABS = [
   { href: "/dashboard/agenda", label: "Agenda" },
   { href: "/dashboard/services", label: "Servicios" },
+  { href: '/dashboard/team', label: 'Equipo' },
   { href: "/dashboard/hours", label: "Horario" },
 ];
 
