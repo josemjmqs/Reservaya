@@ -23,12 +23,12 @@ export class CreateServiceDto {
 
   @IsOptional()
   @IsInt()
-  @Min(5)
-  @Max(43200) // hasta 30 días
-  totalMin?: number;
+  @Min(0)
+  price?: number | null;
 
   @IsOptional()
   @IsInt()
-  @Min(0)
-  price?: number;
+  @Min(5)
+  @Max(43200)
+  totalMin?: number | null;
 }

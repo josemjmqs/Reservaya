@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { api } from '@/lib/api';
-import { Button, Card, Input } from '@/components/ui';
-import { formatTotal } from '@/lib/format';
-import type { Service } from '@/lib/types';
+import { useCallback, useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { Button, Card, Input } from "@/components/ui";
+import { formatTotal } from "@/lib/format";
+import type { Service } from "@/lib/types";
 
-const empty = { name: '', durationMin: 30, totalMin: '', price: '' };
+const empty = { name: "", durationMin: 30, totalMin: "", price: "" };
 
 interface EditState {
   name: string;
@@ -20,10 +20,10 @@ export default function ServicesPage() {
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edit, setEdit] = useState<EditState>(empty);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    setServices(await api<Service[]>('/services'));
+    setServices(await api<Service[]>("/services"));
   }, []);
 
   useEffect(() => {
@@ -32,68 +32,68 @@ export default function ServicesPage() {
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
+    setError("");
     try {
-      await api('/services', {
-        method: 'POST',
+      await api("/services", {
+        method: "POST",
         body: JSON.stringify({
           name: form.name,
           durationMin: Number(form.durationMin),
-          ...(form.totalMin !== '' && { totalMin: Number(form.totalMin) }),
-          ...(form.price !== '' && { price: Number(form.price) }),
+          ...(form.totalMin !== "" && { totalMin: Number(form.totalMin) }),
+          ...(form.price !== "" && { price: Number(form.price) }),
         }),
       });
       setForm(empty);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : "Error inesperado");
     }
   }
 
   function startEdit(s: Service) {
-    setError('');
+    setError("");
     setEditingId(s.id);
     setEdit({
       name: s.name,
       durationMin: s.durationMin,
-      totalMin: s.totalMin === null ? '' : String(s.totalMin),
-      price: s.price === null ? '' : String(s.price),
+      totalMin: s.totalMin === null ? "" : String(s.totalMin),
+      price: s.price === null ? "" : String(s.price),
     });
   }
 
   async function saveEdit(id: string) {
-    setError('');
+    setError("");
     try {
       await api(`/services/${id}`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify({
           name: edit.name,
           durationMin: Number(edit.durationMin),
-          ...(edit.totalMin !== '' && { totalMin: Number(edit.totalMin) }),
-          ...(edit.price !== '' && { price: Number(edit.price) }),
+          totalMin: edit.totalMin === "" ? null : Number(edit.totalMin),
+          price: edit.price === "" ? null : Number(edit.price),
         }),
       });
       setEditingId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : "Error inesperado");
     }
   }
 
   async function toggle(s: Service) {
-    setError('');
+    setError("");
     try {
       if (s.active) {
-        await api(`/services/${s.id}`, { method: 'DELETE' });
+        await api(`/services/${s.id}`, { method: "DELETE" });
       } else {
         await api(`/services/${s.id}`, {
-          method: 'PATCH',
+          method: "PATCH",
           body: JSON.stringify({ active: true }),
         });
       }
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error inesperado');
+      setError(err instanceof Error ? err.message : "Error inesperado");
     }
   }
 
@@ -164,9 +164,7 @@ export default function ServicesPage() {
                 type="number"
                 placeholder="Duración total (opcional)"
                 value={edit.totalMin}
-                onChange={(e) =>
-                  setEdit({ ...edit, totalMin: e.target.value })
-                }
+                onChange={(e) => setEdit({ ...edit, totalMin: e.target.value })}
                 className="w-52"
               />
               <Input
@@ -192,13 +190,13 @@ export default function ServicesPage() {
               key={s.id}
               className="flex items-center justify-between gap-3 p-4"
             >
-              <div className={s.active ? '' : 'opacity-50'}>
+              <div className={s.active ? "" : "opacity-50"}>
                 <p className="font-medium">{s.name}</p>
                 <p className="text-sm text-gray-600">
                   {s.durationMin} min de atención
                   {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
-                  {s.price !== null && ` · $${s.price.toLocaleString('es-CL')}`}
-                  {!s.active && ' · Desactivado'}
+                  {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
+                  {!s.active && " · Desactivado"}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -214,7 +212,7 @@ export default function ServicesPage() {
                   className="px-3 py-1"
                   onClick={() => toggle(s)}
                 >
-                  {s.active ? 'Desactivar' : 'Activar'}
+                  {s.active ? "Desactivar" : "Activar"}
                 </Button>
               </div>
             </li>
