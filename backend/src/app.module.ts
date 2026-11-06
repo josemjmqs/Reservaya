@@ -12,6 +12,7 @@ import { WorkingHoursModule } from './working-hours/working-hours.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { AgendaModule } from './agenda/agenda.module';
+import { MembersModule } from './members/members.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AgendaModule } from './agenda/agenda.module';
     AvailabilityModule,
     BookingsModule,
     AgendaModule,
+    MembersModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
