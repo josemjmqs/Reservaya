@@ -37,19 +37,17 @@ export class BookingsService {
         services: { some: { serviceId: service.id } },
       },
       select: { id: true },
-      orderBy: { id: 'asc' },
     });
     if (!candidates.length) {
       throw new ConflictException('Profesional no disponible');
     }
 
-    // Se elige el primer profesional que tenga libre esa hora
     const startsAt = new Date(dto.startsAt);
     const day = DateTime.fromJSDate(startsAt, { zone: business.timezone });
     const date = day.toISODate()!;
     let memberId: string | null = null;
 
-    for (const c of candidates) {
+    for (const c of dto.memberId ? candidates : shuffle(candidates)) {
       const slots = await this.availability.slotsForMember(
         c.id,
         business.id,
@@ -135,4 +133,13 @@ export class BookingsService {
     }
     return false;
   }
+}
+
+function shuffle<T>(items: T[]): T[] {
+  const a = [...items];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
