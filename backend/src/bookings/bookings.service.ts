@@ -120,15 +120,18 @@ export class BookingsService {
   }
 
   private isOverlap(e: unknown): boolean {
-    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    if (
+      e instanceof Prisma.PrismaClientKnownRequestError ||
+      e instanceof Prisma.PrismaClientUnknownRequestError
+    ) {
+      const text = `${e.message} ${JSON.stringify(
+        (e as { meta?: unknown }).meta ?? {},
+      )}`;
       return (
-        JSON.stringify(e.meta ?? {}).includes('23P01') ||
-        e.message.includes('booking_no_overlap')
-      );
-    }
-    if (e instanceof Prisma.PrismaClientUnknownRequestError) {
-      return (
-        e.message.includes('booking_no_overlap') || e.message.includes('23P01')
+        text.includes('booking_no_overlap') ||
+        text.includes('23P01') ||
+        text.includes('40P01') ||
+        text.includes('deadlock')
       );
     }
     return false;
