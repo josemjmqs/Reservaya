@@ -11,6 +11,10 @@ export class CreateBookingDto {
   @IsString()
   serviceId: string;
 
+  @IsOptional()
+  @IsString()
+  memberId?: string; // si no viene, se asigna el primer profesional libre
+
   @IsISO8601()
   startsAt: string; // uno de los slots devueltos por /availability
 

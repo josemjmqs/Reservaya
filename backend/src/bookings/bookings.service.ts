@@ -27,20 +27,45 @@ export class BookingsService {
     });
     if (!service) throw new NotFoundException('Servicio no encontrado');
 
-    const member = await this.prisma.member.findFirst({
-      where: { businessId: business.id, bookable: true },
+    // Profesionales que pueden hacer este servicio (o solo el elegido)
+    const candidates = await this.prisma.member.findMany({
+      where: {
+        businessId: business.id,
+        active: true,
+        bookable: true,
+        ...(dto.memberId && { id: dto.memberId }),
+        services: { some: { serviceId: service.id } },
+      },
+      select: { id: true },
+      orderBy: { id: 'asc' },
     });
-    if (!member) throw new ConflictException('El negocio no tiene agenda');
-
-    // La hora debe ser uno de los espacios que el sistema ofrece
-    const startsAt = new Date(dto.startsAt);
-    const date = DateTime.fromJSDate(startsAt, {
-      zone: business.timezone,
-    }).toISODate()!;
-    const { slots } = await this.availability.getSlots(slug, service.id, date);
-    if (!slots.includes(startsAt.toISOString())) {
-      throw new ConflictException('Esa hora no está disponible');
+    if (!candidates.length) {
+      throw new ConflictException('Profesional no disponible');
     }
+
+    // Se elige el primer profesional que tenga libre esa hora
+    const startsAt = new Date(dto.startsAt);
+    const day = DateTime.fromJSDate(startsAt, { zone: business.timezone });
+    const date = day.toISODate()!;
+    let memberId: string | null = null;
+
+    for (const c of candidates) {
+      const slots = await this.availability.slotsForMember(
+        c.id,
+        business.id,
+        business.timezone,
+        date,
+        day.weekday % 7,
+        day.startOf('day').toJSDate(),
+        day.endOf('day').toJSDate(),
+        service.durationMin,
+      );
+      if (slots.includes(startsAt.toISOString())) {
+        memberId = c.id;
+        break;
+      }
+    }
+    if (!memberId) throw new ConflictException('Esa hora no está disponible');
 
     const endsAt = new Date(startsAt.getTime() + service.durationMin * 60000);
 
@@ -64,13 +89,13 @@ export class BookingsService {
             endsAt,
             notes: dto.notes,
             businessId: business.id,
-            memberId: member.id,
+            memberId: memberId!,
             serviceId: service.id,
             customerId: customer.id,
           },
         });
       });
-      // sin await: el cliente no espera al correo
+
       void this.notifications.bookingConfirmed({
         to: dto.email,
         customerName: dto.name,
@@ -80,6 +105,7 @@ export class BookingsService {
         timezone: business.timezone,
         manageToken: booking.manageToken,
       });
+
       return {
         id: booking.id,
         startsAt: booking.startsAt,
@@ -88,7 +114,6 @@ export class BookingsService {
         manageToken: booking.manageToken,
       };
     } catch (e) {
-      // 23P01 = exclusion_violation de PostgreSQL (solape de reservas)
       if (this.isOverlap(e)) {
         throw new ConflictException('Esa hora ya fue tomada');
       }
