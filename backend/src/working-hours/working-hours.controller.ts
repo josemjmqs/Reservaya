@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Put, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkingHoursService } from './working-hours.service';
 import { SetWorkingHoursDto } from './dto/set-working-hours.dto';
@@ -13,8 +13,11 @@ export class WorkingHoursController {
   constructor(private readonly hours: WorkingHoursService) {}
 
   @Get()
-  findAll(@Request() req: AuthenticatedRequest) {
-    return this.hours.findAll(req.user.userId);
+  findAll(
+    @Request() req: AuthenticatedRequest,
+    @Query('memberId') memberId?: string,
+  ) {
+    return this.hours.findAll(req.user.userId, memberId);
   }
 
   @Put()
