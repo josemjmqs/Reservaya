@@ -21,6 +21,7 @@ export default function PublicPage({
   const { slug } = use(params);
   const [business, setBusiness] = useState<PublicBusiness | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [memberId, setMemberId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [date, setDate] = useState(todayISO());
   const [slots, setSlots] = useState<string[]>([]);
@@ -41,7 +42,9 @@ export default function PublicPage({
       if (!serviceId || !date) return null;
       try {
         const r = await api<{ slots: string[] }>(
-          `/public/${slug}/availability?serviceId=${serviceId}&date=${date}`,
+          `/public/${slug}/availability?serviceId=${serviceId}&date=${date}${
+            memberId ? `&memberId=${memberId}` : ""
+          }`,
           { signal },
         );
         if (signal?.aborted) return null;
@@ -53,7 +56,7 @@ export default function PublicPage({
         return err instanceof Error ? err.message : "Error inesperado";
       }
     },
-    [slug, serviceId, date],
+    [slug, serviceId, date, memberId],
   );
 
   useEffect(() => {
@@ -75,6 +78,7 @@ export default function PublicPage({
         body: JSON.stringify({
           serviceId,
           startsAt,
+          ...(memberId && { memberId }),
           name: form.name,
           email: form.email,
           ...(form.phone && { phone: form.phone }),
@@ -100,6 +104,10 @@ export default function PublicPage({
       minute: "2-digit",
       timeZone: business.timezone,
     });
+
+  const eligible = business.members.filter((m) =>
+    m.services.some((s) => s.serviceId === serviceId),
+  );
 
   if (done) {
     const link = `${window.location.origin}/reserva/${done.manageToken}`;
@@ -152,13 +160,16 @@ export default function PublicPage({
       <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
       <p className="mb-6 text-gray-600">Reserva tu hora online</p>
 
-      <h2 className="mb-2 text-sm font-medium text-gray-700">1. Servicio</h2>
+      <h2 className="mb-2 text-sm font-medium text-gray-700">Servicio</h2>
       <div className="flex flex-col gap-2">
         {business.services.map((s) => (
           <button
             key={s.id}
             type="button"
-            onClick={() => setServiceId(s.id)}
+            onClick={() => {
+              setServiceId(s.id);
+              setMemberId("");
+            }}
             className={`rounded-lg border p-3 text-left transition ${
               serviceId === s.id
                 ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
@@ -177,10 +188,36 @@ export default function PublicPage({
         )}
       </div>
 
+      {eligible.length > 1 && (
+        <>
+          <h2 className="mb-2 mt-6 text-sm font-medium text-gray-700">
+            Profesional
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {[{ id: "", displayName: "Sin preferencia" }, ...eligible].map(
+              (m) => (
+                <button
+                  key={m.id || "any"}
+                  type="button"
+                  onClick={() => setMemberId(m.id)}
+                  className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+                    memberId === m.id
+                      ? "border-indigo-600 bg-indigo-600 text-white"
+                      : "border-gray-200 bg-white hover:border-indigo-300"
+                  }`}
+                >
+                  {m.displayName}
+                </button>
+              ),
+            )}
+          </div>
+        </>
+      )}
+
       {serviceId && (
         <>
           <h2 className="mb-2 mt-6 text-sm font-medium text-gray-700">
-            2. Día y hora
+            Día y hora
           </h2>
           {(() => {
             const s = business.services.find((x) => x.id === serviceId);
@@ -223,7 +260,7 @@ export default function PublicPage({
 
       {startsAt && (
         <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
-          <h2 className="text-sm font-medium text-gray-700">3. Tus datos</h2>
+          <h2 className="text-sm font-medium text-gray-700">Tus datos</h2>
           <Input
             placeholder="Nombre"
             value={form.name}

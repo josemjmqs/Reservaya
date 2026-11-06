@@ -20,6 +20,11 @@ export interface PublicBusiness {
   timezone: string;
   phone: string | null;
   services: Omit<Service, "active">[];
+  members: {
+    id: string;
+    displayName: string;
+    services: { serviceId: string }[];
+  }[];
 }
 
 export interface BookingResult {
@@ -45,6 +50,7 @@ export interface AgendaBooking {
   status: BookingStatus;
   notes: string | null;
   service: { name: string; durationMin: number };
+  member: { id: string; displayName: string };
   customer: { name: string; email: string; phone: string | null };
 }
 
@@ -55,4 +61,13 @@ export interface ManagedBooking {
   status: BookingStatus;
   service: { name: string; durationMin: number };
   business: { name: string; timezone: string; phone: string | null };
+}
+
+export interface TeamMember {
+  id: string;
+  displayName: string;
+  role: "OWNER" | "STAFF";
+  bookable: boolean;
+  active: boolean;
+  services: { serviceId: string }[];
 }

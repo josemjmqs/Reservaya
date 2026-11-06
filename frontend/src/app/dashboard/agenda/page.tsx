@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button, Input } from "@/components/ui";
-import type { AgendaBooking, BookingStatus, SettableStatus } from "@/lib/types";
+import type {
+  AgendaBooking,
+  BookingStatus,
+  SettableStatus,
+  TeamMember,
+} from "@/lib/types";
 
 const TZ = "America/Santiago";
 
@@ -31,18 +36,25 @@ function iso(d: Date) {
 export default function AgendaPage() {
   const [date, setDate] = useState(iso(new Date()));
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [memberId, setMemberId] = useState(""); // "" = todos
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     try {
-      setBookings(
-        await api<AgendaBooking[]>(`/agenda?from=${date}&to=${date}`),
-      );
+      const q = `/agenda?from=${date}&to=${date}${memberId ? `&memberId=${memberId}` : ""}`;
+      setBookings(await api<AgendaBooking[]>(q));
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error inesperado");
     }
-  }, [date]);
+  }, [date, memberId]);
+
+  useEffect(() => {
+    api<TeamMember[]>("/members")
+      .then((list) => setMembers(list.filter((m) => m.active)))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setError("");
@@ -115,6 +127,20 @@ export default function AgendaPage() {
         <Button variant="secondary" onClick={() => setDate(iso(new Date()))}>
           Hoy
         </Button>
+        {members.length > 1 && (
+          <select
+            value={memberId}
+            onChange={(e) => setMemberId(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">Todos los profesionales</option>
+            {members.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.displayName}
+              </option>
+            ))}
+          </select>
+        )}
         <Button variant="secondary" onClick={load}>
           Actualizar
         </Button>
@@ -140,6 +166,11 @@ export default function AgendaPage() {
                   {b.customer.name} · {b.customer.email}
                   {b.customer.phone && ` · ${b.customer.phone}`}
                 </p>
+                {members.length > 1 && (
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    Con {b.member.displayName}
+                  </p>
+                )}
               </div>
               <span
                 className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${BADGE[b.status]}`}

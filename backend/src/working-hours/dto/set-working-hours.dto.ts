@@ -7,6 +7,8 @@ import {
   Max,
   Min,
   ValidateNested,
+  IsOptional,
+  IsString
 } from 'class-validator';
 
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -30,4 +32,8 @@ export class SetWorkingHoursDto {
   @ValidateNested({ each: true })
   @Type(() => DayHoursDto)
   days: DayHoursDto[];
+
+  @IsOptional()
+  @IsString()
+  memberId?: string;
 }

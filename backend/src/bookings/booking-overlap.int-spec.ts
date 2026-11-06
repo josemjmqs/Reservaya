@@ -35,7 +35,11 @@ beforeAll(async () => {
   const [u1, u2] = await Promise.all(
     [1, 2].map((n) =>
       prisma.user.create({
-        data: { email: `int-${run}-${n}@test.local`, name: `U${n}`, password: 'x' },
+        data: {
+          email: `int-${run}-${n}@test.local`,
+          name: `U${n}`,
+          password: 'x',
+        },
       }),
     ),
   );
@@ -73,7 +77,7 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-const OVERLAP = /booking_no_overlap|23P01|exclusion/i;
+const OVERLAP = /booking_no_overlap|23P01|exclusion|40P01|deadlock/i;
 
 describe('restricción anti-solape de reservas', () => {
   it('rechaza una reserva que se solapa parcialmente', async () => {
@@ -129,4 +133,28 @@ describe('restricción anti-solape de reservas', () => {
       book(at(6, 10), at(6, 10, 30), otherMemberId),
     ).resolves.toBeDefined();
   });
+
+  it('dos profesionales distintos pueden tomar la misma hora en paralelo', async () => {
+    const results = await Promise.allSettled([
+      book(at(7, 10), at(7, 10, 30), memberId),
+      book(at(7, 10), at(7, 10, 30), otherMemberId),
+    ]);
+    expect(results.every((r) => r.status === 'fulfilled')).toBe(true);
+  });
+
+  it('con 2 profesionales y 6 clientes simultáneos a la misma hora, solo 2 ganan', async () => {
+    const members = [memberId, otherMemberId];
+    const results = await Promise.allSettled(
+      Array.from({ length: 6 }, (_, i) =>
+        book(at(8, 10), at(8, 10, 30), members[i % 2]),
+      ),
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled');
+    const failed = results.filter(
+      (r): r is PromiseRejectedResult => r.status === 'rejected',
+    );
+    expect(ok).toHaveLength(2);
+    expect(failed).toHaveLength(4);
+    failed.forEach((f) => expect(String(f.reason)).toMatch(OVERLAP));
+  }); 
 });

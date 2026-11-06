@@ -7,7 +7,12 @@ import { computeSlots } from './compute-slots';
 export class AvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSlots(slug: string, serviceId: string, date: string) {
+  async getSlots(
+    slug: string,
+    serviceId: string,
+    date: string,
+    memberId?: string,
+  ) {
     const business = await this.prisma.business.findUnique({ where: { slug } });
     if (!business) throw new NotFoundException('Negocio no encontrado');
 
@@ -16,28 +21,61 @@ export class AvailabilityService {
     });
     if (!service) throw new NotFoundException('Servicio no encontrado');
 
-    const member = await this.prisma.member.findFirst({
-      where: { businessId: business.id, bookable: true },
-    });
-    if (!member) return { slots: [] };
-
     const day = DateTime.fromISO(date, { zone: business.timezone });
-    if (!day.isValid) return { slots: [] };
+    if (!day.isValid) return { slots: [] as string[] };
 
-    // luxon: lunes=1 ... domingo=7; nuestro modelo: domingo=0
-    const weekday = day.weekday % 7;
-    const hours = await this.prisma.workingHours.findFirst({
-      where: { memberId: member.id, weekday },
+    const members = await this.prisma.member.findMany({
+      where: {
+        businessId: business.id,
+        active: true,
+        bookable: true,
+        ...(memberId && { id: memberId }),
+        services: { some: { serviceId } },
+      },
+      select: { id: true },
     });
-    if (!hours) return { slots: [] };
 
+    const weekday = day.weekday % 7;
     const dayStart = day.startOf('day').toJSDate();
     const dayEnd = day.endOf('day').toJSDate();
+    const all = new Set<string>();
+
+    for (const m of members) {
+      const slots = await this.slotsForMember(
+        m.id,
+        business.id,
+        business.timezone,
+        date,
+        weekday,
+        dayStart,
+        dayEnd,
+        service.durationMin,
+      );
+      slots.forEach((s) => all.add(s));
+    }
+    return { slots: [...all].sort() };
+  }
+
+  // Horas libres de un profesional concreto (también la usa bookings)
+  async slotsForMember(
+    memberId: string,
+    businessId: string,
+    timezone: string,
+    date: string,
+    weekday: number,
+    dayStart: Date,
+    dayEnd: Date,
+    durationMin: number,
+  ): Promise<string[]> {
+    const hours = await this.prisma.workingHours.findFirst({
+      where: { memberId, weekday },
+    });
+    if (!hours) return [];
 
     const [bookings, blocks] = await Promise.all([
       this.prisma.booking.findMany({
         where: {
-          memberId: member.id,
+          memberId,
           status: { in: ['PENDING', 'CONFIRMED'] },
           startsAt: { lt: dayEnd },
           endsAt: { gt: dayStart },
@@ -45,24 +83,22 @@ export class AvailabilityService {
       }),
       this.prisma.timeBlock.findMany({
         where: {
-          businessId: business.id,
-          OR: [{ memberId: null }, { memberId: member.id }],
+          businessId,
+          OR: [{ memberId: null }, { memberId }],
           startsAt: { lt: dayEnd },
           endsAt: { gt: dayStart },
         },
       }),
     ]);
 
-    const slots = computeSlots({
+    return computeSlots({
       date,
-      timezone: business.timezone,
+      timezone,
       opensAt: hours.opensAt,
       closesAt: hours.closesAt,
-      durationMin: service.durationMin,
+      durationMin,
       busy: [...bookings, ...blocks],
-    });
-
-    return { slots: slots.map((s) => s.toISOString()) };
+    }).map((s) => s.toISOString());
   }
 
   async getBusiness(slug: string) {
@@ -83,6 +119,15 @@ export class AvailabilityService {
             durationMin: true,
             totalMin: true,
             price: true,
+          },
+        },
+        members: {
+          where: { active: true, bookable: true },
+          orderBy: { id: 'asc' },
+          select: {
+            id: true,
+            displayName: true,
+            services: { select: { serviceId: true } },
           },
         },
       },

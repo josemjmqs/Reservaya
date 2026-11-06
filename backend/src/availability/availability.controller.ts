@@ -8,7 +8,7 @@ export class AvailabilityController {
 
   @Get(':slug/availability')
   get(@Param('slug') slug: string, @Query() q: AvailabilityQueryDto) {
-    return this.availability.getSlots(slug, q.serviceId, q.date);
+    return this.availability.getSlots(slug, q.serviceId, q.date, q.memberId);
   }
 
   @Get(':slug')

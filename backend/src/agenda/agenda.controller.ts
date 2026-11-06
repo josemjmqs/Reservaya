@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Query, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AgendaService } from './agenda.service';
 import { ListAgendaDto } from './dto/list-agenda.dto';
@@ -15,7 +24,7 @@ export class AgendaController {
 
   @Get()
   list(@Request() req: AuthenticatedRequest, @Query() q: ListAgendaDto) {
-    return this.agenda.list(req.user.userId, q.from, q.to);
+    return this.agenda.list(req.user.userId, q.from, q.to, q.memberId);
   }
 
   @Patch(':id/status')
