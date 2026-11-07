@@ -30,6 +30,7 @@ export class ServicesService {
     return this.prisma.service.create({
       data: {
         ...dto,
+        category: normalizeCategory(dto.category) ?? null,
         businessId,
         members: { create: owners.map((o) => ({ memberId: o.id })) },
       },
@@ -47,7 +48,10 @@ export class ServicesService {
   async update(userId: string, id: string, dto: UpdateServiceDto) {
     const businessId = await this.getBusinessId(userId);
     await this.findOwned(id, businessId);
-    return this.prisma.service.update({ where: { id }, data: dto });
+    return this.prisma.service.update({
+      where: { id },
+      data: { ...dto, category: normalizeCategory(dto.category) },
+    });
   }
 
   // Borrado lógico: se desactiva para no perder el historial de reservas
@@ -68,4 +72,9 @@ export class ServicesService {
     if (!service) throw new NotFoundException('Servicio no encontrado');
     return service;
   }
+}
+
+function normalizeCategory(value: string | null | undefined) {
+  if (value === undefined) return undefined;
+  return value?.trim() || null;
 }

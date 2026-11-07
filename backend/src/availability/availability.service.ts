@@ -116,6 +116,7 @@ export class AvailabilityService {
             id: true,
             name: true,
             description: true,
+            category: true,
             durationMin: true,
             totalMin: true,
             price: true,

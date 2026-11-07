@@ -1,15 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { Button, Card, Input } from "@/components/ui";
 import { formatTotal } from "@/lib/format";
 import type { Service } from "@/lib/types";
 
-const empty = { name: "", durationMin: 30, totalMin: "", price: "" };
+const empty = {
+  name: "",
+  category: "",
+  durationMin: 30,
+  totalMin: "",
+  price: "",
+};
 
 interface EditState {
   name: string;
+  category: string;
   durationMin: number;
   totalMin: string;
   price: string;
@@ -30,6 +37,15 @@ export default function ServicesPage() {
     load().catch((e) => setError(e.message));
   }, [load]);
 
+  const categories = useMemo(
+    () => [
+      ...new Set(
+        services.map((s) => s.category).filter((c): c is string => !!c),
+      ),
+    ],
+    [services],
+  );
+
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -39,6 +55,7 @@ export default function ServicesPage() {
         body: JSON.stringify({
           name: form.name,
           durationMin: Number(form.durationMin),
+          ...(form.category.trim() !== "" && { category: form.category }),
           ...(form.totalMin !== "" && { totalMin: Number(form.totalMin) }),
           ...(form.price !== "" && { price: Number(form.price) }),
         }),
@@ -55,6 +72,7 @@ export default function ServicesPage() {
     setEditingId(s.id);
     setEdit({
       name: s.name,
+      category: s.category ?? "",
       durationMin: s.durationMin,
       totalMin: s.totalMin === null ? "" : String(s.totalMin),
       price: s.price === null ? "" : String(s.price),
@@ -69,6 +87,7 @@ export default function ServicesPage() {
         body: JSON.stringify({
           name: edit.name,
           durationMin: Number(edit.durationMin),
+          category: edit.category.trim() === "" ? null : edit.category,
           totalMin: edit.totalMin === "" ? null : Number(edit.totalMin),
           price: edit.price === "" ? null : Number(edit.price),
         }),
@@ -101,6 +120,12 @@ export default function ServicesPage() {
     <div>
       <h1 className="text-xl font-semibold tracking-tight">Servicios</h1>
 
+      <datalist id="categories">
+        {categories.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+
       <Card className="my-4">
         <form onSubmit={create} className="flex flex-wrap items-center gap-2">
           <Input
@@ -111,9 +136,15 @@ export default function ServicesPage() {
             required
           />
           <Input
+            list="categories"
+            placeholder="Categoría (ej. Cortes de pelo)"
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            className="w-48"
+          />
+          <Input
             type="number"
             placeholder="Min. de atención"
-            title="Minutos que bloquean tu agenda"
             value={form.durationMin}
             onChange={(e) =>
               setForm({ ...form, durationMin: Number(e.target.value) })
@@ -124,7 +155,6 @@ export default function ServicesPage() {
           <Input
             type="number"
             placeholder="Duración total (opcional)"
-            title="Minutos totales del trabajo; es solo informativo"
             value={form.totalMin}
             onChange={(e) => setForm({ ...form, totalMin: e.target.value })}
             className="w-52"
@@ -152,6 +182,13 @@ export default function ServicesPage() {
                 className="min-w-48 flex-1"
               />
               <Input
+                list="categories"
+                placeholder="Categoría (vacío = ninguna)"
+                value={edit.category}
+                onChange={(e) => setEdit({ ...edit, category: e.target.value })}
+                className="w-48"
+              />
+              <Input
                 type="number"
                 placeholder="Min. de atención"
                 value={edit.durationMin}
@@ -162,17 +199,17 @@ export default function ServicesPage() {
               />
               <Input
                 type="number"
-                placeholder="Duración total (opcional)"
+                placeholder="Duración total (vacío = ninguna)"
                 value={edit.totalMin}
                 onChange={(e) => setEdit({ ...edit, totalMin: e.target.value })}
                 className="w-52"
               />
               <Input
                 type="number"
-                placeholder="Precio"
+                placeholder="Precio (vacío = sin precio)"
                 value={edit.price}
                 onChange={(e) => setEdit({ ...edit, price: e.target.value })}
-                className="w-32"
+                className="w-40"
               />
               <Button className="px-3 py-1" onClick={() => saveEdit(s.id)}>
                 Guardar
@@ -191,7 +228,14 @@ export default function ServicesPage() {
               className="flex items-center justify-between gap-3 p-4"
             >
               <div className={s.active ? "" : "opacity-50"}>
-                <p className="font-medium">{s.name}</p>
+                <p className="font-medium">
+                  {s.name}
+                  {s.category && (
+                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-600">
+                      {s.category}
+                    </span>
+                  )}
+                </p>
                 <p className="text-sm text-gray-600">
                   {s.durationMin} min de atención
                   {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
