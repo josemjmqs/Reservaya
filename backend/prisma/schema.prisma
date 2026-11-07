@@ -75,6 +75,7 @@ model Service {
   business    Business @relation(fields: [businessId], references: [id])
   bookings    Booking[]
   members     MemberService[]
+  category    String?
 
   @@index([businessId])
 }

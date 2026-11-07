@@ -169,7 +169,6 @@ docker-compose.yml
 - Test de `computeSlots` para los días de cambio de horario de verano en Chile.
 - Tabla de transiciones permitidas entre estados de una reserva.
 - Migrar a Prisma 7 cuando el ecosistema esté estable.
-- Permitir quitar un precio o una duración total ya definidos (hoy solo se pueden modificar).
 - Modelar capacidad real (varios boxes o puestos simultáneos) con múltiples profesionales por negocio.
 - Con ‘Sin preferencia’, el profesional se elige al azar entre los que tienen la hora libre; la restricción de PostgreSQL evita dobles reservas si dos clientes compiten por el mismo.
 

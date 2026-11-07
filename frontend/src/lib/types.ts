@@ -6,6 +6,7 @@ export interface Service {
   totalMin: number | null;
   price: number | null;
   active: boolean;
+  category: string | null;
 }
 
 export interface WorkingHour {

@@ -5,6 +5,7 @@ import {
   Max,
   Min,
   MinLength,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateServiceDto {
@@ -31,4 +32,9 @@ export class CreateServiceDto {
   @Min(5)
   @Max(43200)
   totalMin?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  category?: string | null;
 }
