@@ -4,7 +4,7 @@
 
 Plataforma de reservas online para pequeños negocios (talleres, peluquerías, consultas). Cada negocio tiene su página pública donde sus clientes reservan una hora **sin crear cuenta**, y un panel donde el dueño administra servicios, horarios y agenda.
 
-**Demo:** https://reservaya-gray.vercel.app/taller-demo
+**Demo:** https://app.reservahoy.cl/taller-demo
 **Panel del negocio:** https://reservaya-gray.vercel.app/login
 
 > El backend corre en el plan gratuito de Render: tras un rato sin uso, la primera carga puede tardar 30-60 segundos en despertar.
