@@ -1,4 +1,4 @@
-# Reservaya
+# Reservahoy
 
 ![CI](https://github.com/josemjmqs/Reservaya/actions/workflows/ci.yml/badge.svg)
 

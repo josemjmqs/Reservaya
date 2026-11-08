@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Reservaya · Reservas online para tu negocio",
-    template: "%s · Reservaya",
+    default: "Reservahoy · Reservas online para tu negocio",
+    template: "%s · Reservahoy",
   },
   description:
     "Tus clientes reservan una hora desde un enlace, sin crear cuenta. Tú ves tu agenda al instante.",

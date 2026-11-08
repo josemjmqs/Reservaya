@@ -23,7 +23,7 @@ export class NotificationsService {
   constructor(config: ConfigService) {
     const key = config.get<string>('RESEND_API_KEY');
     this.resend = key ? new Resend(key) : null;
-    this.from = config.get<string>('MAIL_FROM') ?? 'Reservaya <onboarding@resend.dev>';
+    this.from = config.get<string>('MAIL_FROM') ?? 'Reservahoy <reservas@mail.reservahoy.cl>';
     this.frontendUrl = config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
   }
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui';
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6">
-      <p className="text-sm font-medium text-indigo-600">Reservaya</p>
+      <p className="text-sm font-medium text-indigo-600">Reservahoy</p>
       <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900">
         Reservas online para tu negocio
       </h1>
