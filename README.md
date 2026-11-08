@@ -20,18 +20,24 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 ## Funcionalidades
 
 **Cliente (sin cuenta)**
-
-- Elige servicio, día y hora entre los espacios realmente libres
-- Reserva con nombre, correo y teléfono
-- Ve y cancela su reserva con un enlace privado
-- Ve el tiempo total estimado de cada servicio
+- Elige servicio, profesional y día entre las horas realmente libres
+- Servicios agrupados por categoría (ej. Hombres, Mujeres) y con la duración que corresponde a cada uno
+- "Sin preferencia": el sistema asigna al azar un profesional que tenga la hora libre
+- Reserva con nombre, correo y teléfono, y recibe una confirmación por correo
+- Ve y cancela su reserva con un enlace privado, sin crear cuenta
 
 **Negocio**
+- Registro e inicio de sesión (sesión con cookie `httpOnly`)
+- Gestión de servicios: categoría, tiempo de atención, duración total estimada, precio opcional, edición y activar/desactivar
+- Equipo: profesionales con los servicios que realizan y su propio horario semanal
+- Agenda diaria con filtro por profesional, estados de la reserva (completada, no se presentó, cancelada) y actualización automática
+- Página pública propia (`/tu-negocio`) lista para compartir
 
-- Registro y login (JWT)
-- Gestión de servicios (tiempo de atención, duración total estimada, precio, activar/desactivar y edición)
-- Horario semanal de atención
-- Agenda diaria con cambio de estado (completada, no se presentó, cancelada)
+**Calidad y seguridad**
+- Sin dobles reservas, garantizado por una restricción de PostgreSQL y probado con peticiones concurrentes
+- Aislamiento entre negocios verificado
+- Límites de peticiones por IP y de reservas por correo
+- Respaldos diarios cifrados
 
 ## Stack
 
@@ -72,6 +78,21 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 **"Sin preferencia" asigna al azar entre quienes tienen la hora libre.** Si el cliente no elige profesional, el sistema mezcla a los candidatos que hacen el servicio y asigna al primero con esa hora disponible, lo que reparte la carga a la larga sin favorecer a quien se creó primero. La hora que se ofrece es la unión de las horas libres de todos.
 
 **Concurrencia con varios profesionales.** La restricción anti-solape es por profesional, así que dos clientes pueden tomar la misma hora con profesionales distintos, pero nunca con el mismo. Lo cubren tests de integración contra PostgreSQL real, incluyendo 6 clientes simultáneos sobre 2 profesionales (solo 2 ganan). Los solapes y los deadlocks que PostgreSQL resuelve abortando una transacción se traducen a un 409 claro, y ninguna reserva queda duplicada.
+
+**Correo transaccional con dominio verificado.** Los correos salen de un subdominio dedicado (`mail.`) con DKIM y SPF verificados y DMARC en modo monitoreo, lo que mejora la entrega y aísla su reputación. El envío nunca bloquea la reserva, y un límite por correo (3 por hora) junto al rate limit por IP evita que el formulario se use para enviar correo a terceros.
+
+**Respaldos cifrados y verificados.** Un workflow diario de GitHub Actions hace `pg_dump`, cifra el archivo con `age` y lo sube a un bucket privado de Cloudflare R2 con retención de 30 días. La restauración se probó de punta a punta en una base limpia.
+
+## Operación
+
+- **Infraestructura:** frontend en Vercel, API en Render, PostgreSQL en Neon, DNS en Cloudflare.
+- **Respaldos:** diarios (06:17 UTC), cifrados con `age`, en Cloudflare R2, retención de 30 días. La clave privada se guarda fuera del repositorio y de GitHub.
+- **Restaurar un respaldo:**
+  1. Descargar el archivo `.dump.age` desde R2.
+  2. Descifrar: `age -d -i clave.txt -o respaldo.dump archivo.dump.age`
+  3. Restaurar: `pg_restore --no-owner -d <base> respaldo.dump`
+- **Correo:** Resend, dominio `mail.` con DKIM verificado.
+- **Despliegue:** automático al hacer merge a `main` (Render y Vercel).
 
 ## Correrlo en local
 
@@ -151,10 +172,8 @@ docker-compose.yml
 
 **Producto**
 
-- Verificar un dominio propio en Resend: hoy el correo de confirmación solo llega al correo de la cuenta de Resend (limitación de `onboarding@resend.dev`). Si no se configura `RESEND_API_KEY`, la app funciona igual y simplemente no envía correos.
 - Notificaciones por WhatsApp (Cloud API de Meta) como segundo canal, aprovechando el `NotificationsService`.
 - Recordatorios automáticos antes de la hora reservada.
-- Edición de servicios (nombre, duración, precio) desde el panel.
 - Bloqueos de tiempo (vacaciones, feriados) con pantalla de administración.
 - Campos personalizados por negocio (por ejemplo, patente en un taller).
 - Pago de abono al reservar.
