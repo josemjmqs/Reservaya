@@ -2,6 +2,8 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { DateTime } from 'luxon';
@@ -21,6 +23,21 @@ export class BookingsService {
   async create(slug: string, dto: CreateBookingDto) {
     const business = await this.prisma.business.findUnique({ where: { slug } });
     if (!business) throw new NotFoundException('Negocio no encontrado');
+
+    const since = new Date(Date.now() - 60 * 60 * 1000);
+    const recent = await this.prisma.booking.count({
+      where: {
+        businessId: business.id,
+        customer: { email: dto.email },
+        createdAt: { gte: since },
+      },
+    });
+    if (recent >= 3) {
+      throw new HttpException(
+        'Demasiadas reservas con este correo, intenta más tarde',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
 
     const service = await this.prisma.service.findFirst({
       where: { id: dto.serviceId, businessId: business.id, active: true },
