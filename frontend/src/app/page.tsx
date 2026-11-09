@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui';
+import Link from "next/link";
+import { Button } from "@/components/ui";
 
 export default function Home() {
   return (
@@ -24,6 +24,14 @@ export default function Home() {
           <Button variant="secondary">Iniciar sesión</Button>
         </Link>
       </div>
+      <footer className="mt-12 flex gap-4 text-sm text-gray-500">
+        <Link href="/privacidad" className="hover:underline">
+          Privacidad
+        </Link>
+        <Link href="/terminos" className="hover:underline">
+          Términos
+        </Link>
+      </footer>
     </main>
   );
 }
