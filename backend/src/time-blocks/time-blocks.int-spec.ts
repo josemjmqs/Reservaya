@@ -1,12 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
-import { AvailabilityService } from '../availability/availability.service';
-import type { PrismaService } from '../prisma/prisma.service';
+// Sin imports de Nest: sus paquetes son solo ESM y este Jest corre en CommonJS
+import { findMemberSlots } from '../availability/member-slots';
 
 const prisma = new PrismaClient();
-const availability = new AvailabilityService(
-  prisma as unknown as PrismaService,
-);
 const run = Date.now().toString(36);
 const tz = 'America/Santiago';
 
@@ -20,16 +17,16 @@ const local = (date: string, time = '00:00') =>
 
 const slots = (member: string, date: string) => {
   const day = local(date);
-  return availability.slotsForMember(
-    member,
+  return findMemberSlots(prisma, {
+    memberId: member,
     businessId,
-    tz,
+    timezone: tz,
     date,
-    day.weekday % 7,
-    day.startOf('day').toJSDate(),
-    day.endOf('day').toJSDate(),
-    60,
-  );
+    weekday: day.weekday % 7,
+    dayStart: day.startOf('day').toJSDate(),
+    dayEnd: day.endOf('day').toJSDate(),
+    durationMin: 60,
+  });
 };
 
 beforeAll(async () => {
