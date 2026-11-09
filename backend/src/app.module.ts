@@ -13,6 +13,7 @@ import { AvailabilityModule } from './availability/availability.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { MembersModule } from './members/members.module';
+import { TimeBlocksModule } from './time-blocks/time-blocks.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MembersModule } from './members/members.module';
     BookingsModule,
     AgendaModule,
     MembersModule,
+    TimeBlocksModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
