@@ -27,12 +27,13 @@ model Business {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  createdAt DateTime @default(now())
-  members   Member[]
+  id          String           @id @default(cuid())
+  email       String           @unique
+  name        String
+  password    String
+  createdAt   DateTime         @default(now())
+  members     Member[]
+  resetTokens PasswordResetToken[]
 }
 
 model Member {
@@ -143,4 +144,16 @@ model TimeBlock {
   business   Business @relation(fields: [businessId], references: [id])
 
   @@index([businessId, startsAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
