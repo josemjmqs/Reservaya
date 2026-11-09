@@ -1,0 +1,52 @@
+# Reservahoy
+
+Plataforma de reservas online para pequeños negocios. Cada negocio tiene una página pública (`/[slug]`) donde sus clientes reservan sin cuenta, y un panel para administrar servicios, equipo, horarios y agenda.
+
+## Stack
+- Backend: NestJS 12 (CommonJS), TypeScript, Prisma 6.19 (NO usar Prisma 7), PostgreSQL 16
+- Frontend: Next.js (App Router, `src/`), TypeScript, Tailwind v4 (`@tailwindcss/postcss`)
+- Node 22. Tests: Jest (unitarios e integración)
+- Infra: Vercel (frontend), Render (API), Neon (DB), Cloudflare (DNS, R2 para respaldos), Resend (correo)
+
+## Estructura
+- `backend/`: API (auth, services, members, working-hours, availability, bookings, agenda, notifications)
+- `frontend/`: Next.js. El navegador llama a `/api/*` (rewrite hacia el backend con `API_URL`), así la cookie de sesión es first-party
+- `docker-compose.yml`: PostgreSQL local en el puerto 5433
+
+## Comandos
+- Todo `npm`/`npx` se ejecuta DENTRO de `backend/` o `frontend/`; en la raíz solo `docker compose` y `git`
+- Backend: `npm run start:dev`, `npx nest build`, `npm test`, `npm run test:integration`
+- Frontend: `npm run dev` (puerto 3001), `npx tsc --noEmit`, `npm run build`
+- Base local: `docker compose up -d`; consola: `docker compose exec db psql -U reservaya -d reservaya`
+
+## Reglas del proyecto
+- El `businessId` SIEMPRE se obtiene de la membresía del usuario autenticado, nunca del cliente. Recursos de otro negocio responden 404
+- La restricción `booking_no_overlap` (exclusion constraint de PostgreSQL) es la garantía final contra dobles reservas; solape y deadlock se traducen a 409
+- Todas las fechas se guardan en UTC y se convierten con luxon según la zona del negocio (`America/Santiago`)
+- Código y nombres en inglés; textos visibles al usuario en español
+- Sesión: JWT en cookie `httpOnly` (también se acepta header Bearer para pruebas)
+- Correos: nunca deben romper el flujo principal (el envío captura sus errores)
+- Los correos se normalizan a minúsculas (trim + lowercase)
+
+## Prisma y migraciones
+- No editar migraciones ya aplicadas; crear nuevas con `npx prisma migrate dev --name ...`
+- Detener el servidor antes de `prisma generate`/`migrate` (EPERM en Windows)
+- Producción aplica migraciones con `prisma migrate deploy` al arrancar (Render)
+
+## Seguridad
+- NUNCA leer, mostrar ni commitear archivos `.env`, claves de Neon/R2/Resend, ni `age-key.txt`
+- Los respaldos y dumps viven fuera del repo
+- No ejecutar comandos destructivos ni contra producción sin confirmación explícita
+
+## Flujo de trabajo
+- Una rama por función (`feat/...`, `fix/...`, `docs/...`), PR, CI en verde (`backend`, `frontend`, `integration`) y merge
+- Tras mergear, borrar la rama y crear una nueva para el siguiente cambio
+- Antes de commitear: `npx nest build` (backend) y `npx tsc --noEmit` + `npm run build` (frontend)
+- Commits pequeños con prefijos `feat:`, `fix:`, `docs:`, `chore:`, `test:`
+
+## Pendientes conocidos
+- Bloqueos de tiempo (modelo `TimeBlock` existe; falta administración)
+- Recordatorios por correo 24 h antes
+- Verificación de correo al registrarse
+- Correo de contacto con dominio propio (Cloudflare Email Routing)
+- WhatsApp, trabajadores con cuenta propia, campos personalizados, pagos
