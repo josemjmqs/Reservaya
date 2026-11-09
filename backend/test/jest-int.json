@@ -2,6 +2,15 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": "..",
   "testRegex": "src/.*\\.int-spec\\.ts$",
-  "transform": { "^.+\\.ts$": "ts-jest" },
-  "testEnvironment": "node"
+  "testEnvironment": "node",
+  "extensionsToTreatAsEsm": [".ts"],
+  "transform": {
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": "<rootDir>/tsconfig.spec.json"
+      }
+    ]
+  }
 }

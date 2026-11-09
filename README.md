@@ -70,6 +70,8 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 
 **Sesión con cookie `httpOnly`.** El JWT viaja en una cookie `HttpOnly; Secure; SameSite=Lax`, inaccesible desde JavaScript, lo que mitiga el robo de token por XSS. Para que la cookie sea first-party, el frontend proxea `/api/*` hacia el backend con un rewrite de Next.js, evitando los problemas de cookies entre dominios.
 
+**Jest en modo ESM.** NestJS 12 se publica solo como ESM, así que Jest corre con `ts-jest` en modo ESM (`--experimental-vm-modules` y `tsconfig.spec.json`). Así los servicios de Nest se prueban directamente contra PostgreSQL, sin mocks.
+
 **Tests de integración contra PostgreSQL real.** La garantía anti-doble reserva se prueba en el CI con una base PostgreSQL 16 (servicio de GitHub Actions), incluyendo 10 peticiones simultáneas a la misma hora donde solo una prevalece.
 
 **Tiempo de atención vs. duración total.** Cada servicio tiene `durationMin` (el tiempo que el profesional está ocupado, que bloquea la agenda y alimenta la restricción anti-solape) y `totalMin` opcional (duración total del trabajo, solo informativa). Así un taller puede recibir varios vehículos el mismo día aunque una reparación tarde un día completo, mientras que un corte de pelo bloquea la hora entera.
@@ -185,7 +187,8 @@ docker-compose.yml
 **Técnicas**
 
 - Leer la zona horaria del negocio en la agenda en vez de fijarla en el frontend.
-- Probar BookingsService de punta a punta con @nestjs/testing (requiere configurar Jest para ESM)
+- Probar BookingsService de punta a punta contra PostgreSQL (Jest ya corre en ESM, como TimeBlocksService).
+- Tests e2e de la app completa: `@nestjs/throttler` sigue en CommonJS y Jest solo carga ESM desde CommonJS en Node 24.9+.
 - Test de `computeSlots` para los días de cambio de horario de verano en Chile.
 - Tabla de transiciones permitidas entre estados de una reserva.
 - Migrar a Prisma 7 cuando el ecosistema esté estable.

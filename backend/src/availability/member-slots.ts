@@ -15,7 +15,7 @@ export interface MemberSlotsInput {
 type Db = Pick<PrismaClient, 'workingHours' | 'booking' | 'timeBlock'>;
 
 // Horas libres de un profesional: su horario menos reservas activas y bloqueos.
-// No depende de Nest para poder probarse contra PostgreSQL real con Jest (CommonJS).
+// No depende de Nest, así se prueba directo contra PostgreSQL.
 export async function findMemberSlots(
   db: Db,
   input: MemberSlotsInput,

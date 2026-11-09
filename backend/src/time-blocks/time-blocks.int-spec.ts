@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
-// Sin imports de Nest: sus paquetes son solo ESM y este Jest corre en CommonJS
 import { findMemberSlots } from '../availability/member-slots';
 
 const prisma = new PrismaClient();
