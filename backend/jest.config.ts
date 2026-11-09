@@ -14,8 +14,14 @@ const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
+  // NestJS 12 se publica solo como ESM: los tests corren en modo ESM
+  // (requiere node --experimental-vm-modules, ya incluido en los scripts)
+  extensionsToTreatAsEsm: ['.ts'],
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    '^.+\\.ts$': [
+      'ts-jest',
+      { useESM: true, tsconfig: '<rootDir>/tsconfig.spec.json' },
+    ],
   },
   moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
   collectCoverageFrom: [
