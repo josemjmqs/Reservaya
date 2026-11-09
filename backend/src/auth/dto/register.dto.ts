@@ -5,6 +5,7 @@ import {
   Matches,
   MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 const RESERVED_SLUGS = [
   'login',
@@ -20,6 +21,9 @@ export class RegisterDto {
   @MinLength(2)
   name: string;
 
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail()
   email: string;
 

@@ -1,9 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter,useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+
+function ResetNotice() {
+  const reset = useSearchParams().get("reset");
+  if (reset !== "1") return null;
+  return (
+    <p className="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+      Contraseña actualizada, ya puedes entrar.
+    </p>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,6 +42,9 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 p-6">
       <h1 className="text-2xl font-bold">Iniciar sesión</h1>
+      <Suspense fallback={null}>
+        <ResetNotice />
+      </Suspense>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <input
           type="email"
@@ -56,6 +69,12 @@ export default function LoginPage() {
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>
+        <Link
+          href="/forgot-password"
+          className="text-sm text-indigo-600 hover:underline"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
       </form>
       <p className="text-sm">
         ¿No tienes cuenta?{" "}

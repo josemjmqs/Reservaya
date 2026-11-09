@@ -23,8 +23,11 @@ export class NotificationsService {
   constructor(config: ConfigService) {
     const key = config.get<string>('RESEND_API_KEY');
     this.resend = key ? new Resend(key) : null;
-    this.from = config.get<string>('MAIL_FROM') ?? 'Reservahoy <reservas@mail.reservahoy.cl>';
-    this.frontendUrl = config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+    this.from =
+      config.get<string>('MAIL_FROM') ??
+      'Reservahoy <reservas@mail.reservahoy.cl>';
+    this.frontendUrl =
+      config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
   }
 
   // Nunca lanza: un fallo de correo no debe romper la reserva
@@ -52,6 +55,24 @@ export class NotificationsService {
         `,
       });
       if (error) this.logger.error(`Resend: ${error.message}`);
+    } catch (e) {
+      this.logger.error('Error enviando correo', e as Error);
+    }
+  }
+
+  async passwordReset(to: string, name: string, token: string): Promise<void> {
+    if (!this.resend) return;
+    const link = `${this.frontendUrl}/reset-password?token=${token}`;
+    try {
+      await this.resend.emails.send({
+        from: this.from,
+        to,
+        subject: 'Restablece tu contraseña',
+        html: `<p>Hola ${escapeHtml(name)},</p>
+        <p>Para elegir una contraseña nueva usa este enlace (vale 1 hora):</p>
+        <p><a href="${link}">Restablecer contraseña</a></p>
+        <p>Si no lo pediste, ignora este mensaje.</p>`,
+      });
     } catch (e) {
       this.logger.error('Error enviando correo', e as Error);
     }
