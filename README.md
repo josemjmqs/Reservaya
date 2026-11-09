@@ -180,6 +180,7 @@ docker-compose.yml
 - Política de anticipación mínima para cancelar.
 - Trabajadores con cuenta propia (hoy solo el dueño inicia sesión).
 - Reparto por carga en vez de azar.
+- Correo de contacto con dominio propio (Cloudflare Email Routing)
 
 **Técnicas**
 

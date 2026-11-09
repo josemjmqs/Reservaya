@@ -303,6 +303,14 @@ export default function PublicPage({
           <Button disabled={loading}>
             {loading ? "Reservando..." : "Confirmar reserva"}
           </Button>
+          <p className="text-xs text-gray-500">
+            Al reservar aceptas que {business.name} use tus datos para gestionar
+            tu reserva. Más información en la{" "}
+            <Link href="/privacidad" className="underline">
+              política de privacidad
+            </Link>
+            .
+          </p>
         </form>
       )}
       {!startsAt && error && (
