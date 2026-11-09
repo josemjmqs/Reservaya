@@ -1,4 +1,4 @@
-import { isAllDay, resolveBlockRange } from './block-range';
+import { exceedsDays, isAllDay, resolveBlockRange } from './block-range';
 
 const tz = 'America/Santiago';
 
@@ -120,5 +120,27 @@ describe('isAllDay', () => {
       endTime: '13:00',
     })!;
     expect(isAllDay(r, tz)).toBe(false);
+  });
+});
+
+describe('exceedsDays', () => {
+  const allDay = (startDate: string, endDate: string) =>
+    resolveBlockRange({ timezone: tz, startDate, endDate, allDay: true })!;
+
+  it('un día de 25 h (fin del horario de verano) cuenta como 1 día', () => {
+    const r = allDay('2027-04-03', '2027-04-03');
+    expect((r.endsAt.getTime() - r.startsAt.getTime()) / 3600000).toBe(25);
+    expect(exceedsDays(r, tz, 1)).toBe(false);
+  });
+
+  it('dos días completos superan el límite de 1 día', () => {
+    expect(exceedsDays(allDay('2027-04-03', '2027-04-04'), tz, 1)).toBe(true);
+  });
+
+  it('366 días de calendario están dentro del límite y 367 no', () => {
+    expect(exceedsDays(allDay('2027-01-01', '2028-01-01'), tz, 366)).toBe(
+      false,
+    );
+    expect(exceedsDays(allDay('2027-01-01', '2028-01-02'), tz, 366)).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ import {
 import type { TimeBlock } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTimeBlockDto } from './dto/create-time-block.dto';
-import { isAllDay, resolveBlockRange } from './block-range';
+import { exceedsDays, isAllDay, resolveBlockRange } from './block-range';
 
 const MAX_DAYS = 366;
 
@@ -77,12 +77,14 @@ export class TimeBlocksService {
     const business = await this.getBusiness(userId);
 
     // El profesional debe ser de tu negocio (404 si no)
+    const names = new Map<string, string>();
     if (dto.memberId) {
       const member = await this.prisma.member.findFirst({
         where: { id: dto.memberId, businessId: business.id },
-        select: { id: true },
+        select: { id: true, displayName: true },
       });
       if (!member) throw new NotFoundException('Profesional no encontrado');
+      names.set(member.id, member.displayName);
     }
 
     const range = resolveBlockRange({ ...dto, timezone: business.timezone });
@@ -92,33 +94,34 @@ export class TimeBlocksService {
     if (range.endsAt.getTime() <= Date.now()) {
       throw new BadRequestException('Ese período ya pasó');
     }
-    const days = (range.endsAt.getTime() - range.startsAt.getTime()) / 86400000;
-    if (days > MAX_DAYS) {
+    if (exceedsDays(range, business.timezone, MAX_DAYS)) {
       throw new BadRequestException('Un bloqueo no puede durar más de un año');
     }
 
-    const reason = dto.reason?.trim() || null;
-    const block = await this.prisma.timeBlock.create({
-      data: {
-        ...range,
-        reason,
-        businessId: business.id,
-        memberId: dto.memberId ?? null,
-      },
+    // Crear y contar en una transacción: si el conteo falla, no queda un
+    // bloqueo guardado del que el panel no se enteró
+    const [block, conflicts] = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.timeBlock.create({
+        data: {
+          ...range,
+          reason: dto.reason?.trim() || null,
+          businessId: business.id,
+          memberId: dto.memberId ?? null,
+        },
+      });
+      // Las reservas existentes no se cancelan solas: se avisa cuántas hay
+      const count = await tx.booking.count({
+        where: {
+          businessId: business.id,
+          ...(dto.memberId && { memberId: dto.memberId }),
+          status: { in: ['PENDING', 'CONFIRMED'] },
+          startsAt: { lt: range.endsAt },
+          endsAt: { gt: range.startsAt },
+        },
+      });
+      return [created, count] as const;
     });
 
-    // Las reservas existentes no se cancelan solas: se avisa cuántas hay
-    const conflicts = await this.prisma.booking.count({
-      where: {
-        businessId: business.id,
-        ...(dto.memberId && { memberId: dto.memberId }),
-        status: { in: ['PENDING', 'CONFIRMED'] },
-        startsAt: { lt: range.endsAt },
-        endsAt: { gt: range.startsAt },
-      },
-    });
-
-    const names = await this.memberNames(business.id, [block.memberId]);
     return {
       ...this.serialize(block, business.timezone, names),
       conflicts,

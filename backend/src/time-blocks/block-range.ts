@@ -44,3 +44,16 @@ export function isAllDay(range: BlockRange, timezone: string): boolean {
   const e = DateTime.fromJSDate(range.endsAt, { zone: timezone });
   return +s === +s.startOf('day') && +e === +e.startOf('day');
 }
+
+// Límite de duración en días de calendario de la zona del negocio.
+// No se usan días de 24 h porque un día local puede durar 23 o 25 h.
+export function exceedsDays(
+  range: BlockRange,
+  timezone: string,
+  maxDays: number,
+): boolean {
+  const limit = DateTime.fromJSDate(range.startsAt, { zone: timezone }).plus({
+    days: maxDays,
+  });
+  return range.endsAt.getTime() > limit.toMillis();
+}
