@@ -5,7 +5,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 ## Stack
 - Backend: NestJS 12 (CommonJS), TypeScript, Prisma 6.19 (NO usar Prisma 7), PostgreSQL 16
 - Frontend: Next.js (App Router, `src/`), TypeScript, Tailwind v4 (`@tailwindcss/postcss`)
-- Node 22. Tests: Jest (unitarios e integración)
+- Node 22. Tests: Jest en modo ESM (unitarios `*.spec.ts`, integración `*.int-spec.ts` contra PostgreSQL)
 - Infra: Vercel (frontend), Render (API), Neon (DB), Cloudflare (DNS, R2 para respaldos), Resend (correo)
 
 ## Estructura
@@ -28,6 +28,11 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Correos: nunca deben romper el flujo principal (el envío captura sus errores)
 - Los correos se normalizan a minúsculas (trim + lowercase)
 
+## Tests
+- Jest corre en ESM porque NestJS 12 es solo ESM: configuración en `jest.config.ts`, `test/jest-int.json` y `tsconfig.spec.json`; los scripts usan `node --experimental-vm-modules`
+- Los servicios se prueban instanciándolos con un `PrismaClient` real (ej. `time-blocks.service.int-spec.ts`)
+- Todavía no se puede cargar `AppModule` ni `AuthController` en Jest: `@nestjs/throttler` es CommonJS y hace `require` de `@nestjs/common` (ESM); Jest lo soporta recién en Node 24.9+
+
 ## Prisma y migraciones
 - No editar migraciones ya aplicadas; crear nuevas con `npx prisma migrate dev --name ...`
 - Detener el servidor antes de `prisma generate`/`migrate` (EPERM en Windows)
@@ -45,7 +50,6 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Commits pequeños con prefijos `feat:`, `fix:`, `docs:`, `chore:`, `test:`
 
 ## Pendientes conocidos
-- Bloqueos de tiempo (modelo `TimeBlock` existe; falta administración)
 - Recordatorios por correo 24 h antes
 - Verificación de correo al registrarse
 - Correo de contacto con dominio propio (Cloudflare Email Routing)
