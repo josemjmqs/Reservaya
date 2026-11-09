@@ -31,6 +31,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 - Gestión de servicios: categoría, tiempo de atención, duración total estimada, precio opcional, edición y activar/desactivar
 - Equipo: profesionales con los servicios que realizan y su propio horario semanal
 - Agenda diaria con filtro por profesional, estados de la reserva (completada, no se presentó, cancelada) y actualización automática
+- Bloqueos de tiempo (vacaciones, feriados, trámites) por días completos o rangos de horas, para todo el negocio o un profesional; avisa si ya hay reservas en ese período
 - Página pública propia (`/tu-negocio`) lista para compartir
 
 **Calidad y seguridad**
@@ -163,7 +164,7 @@ npm test
 ## Estructura
 
 ```
-backend/    API NestJS (auth, services, working-hours, availability, bookings, agenda)
+backend/    API NestJS (auth, services, members, working-hours, time-blocks, availability, bookings, agenda)
 frontend/   Next.js (login, dashboard, página pública, gestión de reserva)
 docker-compose.yml
 ```
@@ -174,7 +175,6 @@ docker-compose.yml
 
 - Notificaciones por WhatsApp (Cloud API de Meta) como segundo canal, aprovechando el `NotificationsService`.
 - Recordatorios automáticos antes de la hora reservada.
-- Bloqueos de tiempo (vacaciones, feriados) con pantalla de administración.
 - Campos personalizados por negocio (por ejemplo, patente en un taller).
 - Pago de abono al reservar.
 - Política de anticipación mínima para cancelar.

@@ -16,6 +16,7 @@ const TABS = [
   { href: "/dashboard/services", label: "Servicios" },
   { href: '/dashboard/team', label: 'Equipo' },
   { href: "/dashboard/hours", label: "Horario" },
+  { href: "/dashboard/blocks", label: "Bloqueos" },
 ];
 
 export default function DashboardLayout({

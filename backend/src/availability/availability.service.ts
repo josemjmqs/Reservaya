@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../prisma/prisma.service';
-import { computeSlots } from './compute-slots';
+import { findMemberSlots } from './member-slots';
 
 @Injectable()
 export class AvailabilityService {
@@ -67,38 +67,16 @@ export class AvailabilityService {
     dayEnd: Date,
     durationMin: number,
   ): Promise<string[]> {
-    const hours = await this.prisma.workingHours.findFirst({
-      where: { memberId, weekday },
-    });
-    if (!hours) return [];
-
-    const [bookings, blocks] = await Promise.all([
-      this.prisma.booking.findMany({
-        where: {
-          memberId,
-          status: { in: ['PENDING', 'CONFIRMED'] },
-          startsAt: { lt: dayEnd },
-          endsAt: { gt: dayStart },
-        },
-      }),
-      this.prisma.timeBlock.findMany({
-        where: {
-          businessId,
-          OR: [{ memberId: null }, { memberId }],
-          startsAt: { lt: dayEnd },
-          endsAt: { gt: dayStart },
-        },
-      }),
-    ]);
-
-    return computeSlots({
-      date,
+    return findMemberSlots(this.prisma, {
+      memberId,
+      businessId,
       timezone,
-      opensAt: hours.opensAt,
-      closesAt: hours.closesAt,
+      date,
+      weekday,
+      dayStart,
+      dayEnd,
       durationMin,
-      busy: [...bookings, ...blocks],
-    }).map((s) => s.toISOString());
+    });
   }
 
   async getBusiness(slug: string) {

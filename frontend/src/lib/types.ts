@@ -72,3 +72,17 @@ export interface TeamMember {
   active: boolean;
   services: { serviceId: string }[];
 }
+
+export interface TimeBlock {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  reason: string | null;
+  allDay: boolean;
+  member: { id: string; displayName: string } | null;
+}
+
+export interface TimeBlockList {
+  timezone: string;
+  blocks: TimeBlock[];
+}
