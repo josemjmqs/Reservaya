@@ -18,6 +18,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Backend: `npm run start:dev`, `npx nest build`, `npm test`, `npm run test:integration`
 - Frontend: `npm run dev` (puerto 3001), `npx tsc --noEmit`, `npm run lint`, `npm run build`
 - Base local: `docker compose up -d`; consola: `docker compose exec db psql -U reservaya -d reservaya`
+- Datos de prueba: `npx prisma db seed` (en `backend/`, `prisma/seed.mts`): negocio demo `demo-peluqueria`, login `demo@reservahoy.local` / `demo1234`; `SEED_TODAY=1` agrega reservas hoy. Solo corre contra bases locales
 
 ## Reglas del proyecto
 - El `businessId` SIEMPRE se obtiene de la membresía del usuario autenticado, nunca del cliente. Recursos de otro negocio responden 404
@@ -57,6 +58,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Tras mergear, borrar la rama y crear una nueva para el siguiente cambio
 - Antes de commitear: `npx nest build` (backend) y `npx tsc --noEmit` + `npm run lint` + `npm run build` (frontend)
 - En efectos de React no llamar `setState` de forma síncrona: el efecto llama a una función que solo hace el fetch y guarda el resultado en el `.then` (regla de `eslint-config-next`)
+- Cambios de interfaz: antes de mergear, levantar backend y frontend con el seed e iniciar sesión con Playwright para revisarlos en pantalla (escritorio y celular)
 - Commits pequeños con prefijos `feat:`, `fix:`, `docs:`, `chore:`, `test:`
 - Tras cada cambio, anotar en `CODE_REVIEW.md` los archivos modificados en orden de lectura, agrupados por commit (hash + mensaje). Es una lista local (en `.gitignore`): el dueño lo lee de arriba hacia abajo y borra lo que ya revisó, así que las entradas nuevas van SIEMPRE al final y nunca se restauran las borradas
 

@@ -159,6 +159,18 @@ npm run dev
 
 Abre http://localhost:3001/register, crea una cuenta y ya puedes crear servicios y horarios. Tu página pública quedará en `http://localhost:3001/<tu-slug>`.
 
+### 4. Datos de prueba (opcional)
+
+Para no partir de cero, crea un negocio demo con equipo, servicios, horarios y reservas alrededor de hoy (ayer, los próximos días y una cancelada):
+
+```bash
+cd backend
+npx prisma db seed                # hoy queda sin reservas
+SEED_TODAY=1 npx prisma db seed   # también agrega reservas para hoy (en PowerShell: $env:SEED_TODAY=1; npx prisma db seed)
+```
+
+Entra en http://localhost:3001/login con `demo@reservahoy.local` / `demo1234`. La página pública queda en http://localhost:3001/demo-peluqueria. Puedes correrlo las veces que quieras: borra y vuelve a crear solo el negocio demo, y se niega a correr si `DATABASE_URL` no apunta a una base local.
+
 ### Tests
 
 ```bash
