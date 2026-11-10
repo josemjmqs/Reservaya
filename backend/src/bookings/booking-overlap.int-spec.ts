@@ -21,8 +21,8 @@ const book = (start: Date, end: Date, member = memberId) =>
       endsAt: end,
       businessId,
       memberId: member,
-      serviceId,
       customerId,
+      items: { create: { serviceId, position: 0 } },
     },
   });
 
