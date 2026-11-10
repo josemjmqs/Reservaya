@@ -19,6 +19,7 @@ const TABS = [
   { href: '/dashboard/team', label: 'Equipo' },
   { href: "/dashboard/hours", label: "Horario" },
   { href: "/dashboard/blocks", label: "Bloqueos" },
+  { href: "/dashboard/settings", label: "Ajustes" },
 ];
 
 function VerifyEmailBanner({ email }: { email: string }) {

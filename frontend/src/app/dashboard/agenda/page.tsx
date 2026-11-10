@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { Button, Input } from "@/components/ui";
 import type {
@@ -43,8 +44,14 @@ const fetchNext = (memberId: string) =>
     `/agenda/next${memberId ? `?memberId=${memberId}` : ""}`,
   ).then((r) => r.booking);
 
-export default function AgendaPage() {
-  const [date, setDate] = useState(iso(new Date()));
+function AgendaContent() {
+  // ?date=YYYY-MM-DD abre ese día (lo usa el enlace del correo de reserva nueva)
+  const initialDate = useSearchParams().get("date");
+  const [date, setDate] = useState(
+    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)
+      ? initialDate
+      : iso(new Date()),
+  );
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [memberId, setMemberId] = useState(""); // "" = todos
@@ -278,5 +285,13 @@ export default function AgendaPage() {
         </section>
       )}
     </div>
+  );
+}
+
+export default function AgendaPage() {
+  return (
+    <Suspense fallback={null}>
+      <AgendaContent />
+    </Suspense>
   );
 }

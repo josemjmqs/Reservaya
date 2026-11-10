@@ -88,3 +88,8 @@ export interface TimeBlockList {
   timezone: string;
   blocks: TimeBlock[];
 }
+
+export interface Settings {
+  newBookingEmail: boolean;
+  email: string;
+}
