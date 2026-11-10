@@ -4,8 +4,8 @@
 
 Plataforma de reservas online para pequeños negocios (talleres, peluquerías, consultas). Cada negocio tiene su página pública donde sus clientes reservan una hora **sin crear cuenta**, y un panel donde el dueño administra servicios, horarios y agenda.
 
-**Demo:** https://app.reservahoy.cl/taller-demo
-**Panel del negocio:** https://reservaya-gray.vercel.app/login
+**Demo:** https://reservahoy.cl/taller-demo
+**Panel del negocio:** https://reservahoy.cl/login
 
 > El backend corre en el plan gratuito de Render: tras un rato sin uso, la primera carga puede tardar 30-60 segundos en despertar.
 
@@ -97,6 +97,7 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 ## Operación
 
 - **Infraestructura:** frontend en Vercel, API en Render, PostgreSQL en Neon, DNS en Cloudflare.
+- **Dominio:** `reservahoy.cl` es el principal; `www.` y `app.` redirigen a él (308, conservando la ruta). `FRONTEND_URL` en Render debe ser `https://reservahoy.cl`, porque arma los enlaces de los correos.
 - **Respaldos:** diarios (06:17 UTC), cifrados con `age`, en Cloudflare R2, retención de 30 días. La clave privada se guarda fuera del repositorio y de GitHub.
 - **Restaurar un respaldo:**
   1. Descargar el archivo `.dump.age` desde R2.
