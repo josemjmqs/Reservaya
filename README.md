@@ -20,7 +20,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 ## Funcionalidades
 
 **Cliente (sin cuenta)**
-- Elige servicio, profesional y día entre las horas realmente libres
+- Elige uno o varios servicios (hasta 5, se hacen seguidos con un mismo profesional), profesional y día entre las horas realmente libres
 - Servicios agrupados por categoría (ej. Hombres, Mujeres): se muestran solo las categorías y al tocar una se despliegan sus servicios, con la duración que corresponde a cada uno
 - Al elegir un servicio ve su foto y su información adicional (qué incluye, qué traer, recomendaciones)
 - "Sin preferencia": el sistema asigna al azar un profesional que tenga la hora libre
@@ -81,6 +81,8 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 **Equipo con servicios y horarios propios.** Cada negocio puede tener varios profesionales, cada uno con los servicios que realiza y su propio horario semanal. Los profesionales no necesitan cuenta: los administra el dueño, y toda consulta se resuelve desde la membresía del usuario autenticado, así que un negocio nunca puede ver ni modificar profesionales de otro.
 
 **"Sin preferencia" asigna al azar entre quienes tienen la hora libre.** Si el cliente no elige profesional, el sistema mezcla a los candidatos que hacen el servicio y asigna al primero con esa hora disponible, lo que reparte la carga a la larga sin favorecer a quien se creó primero. La hora que se ofrece es la unión de las horas libres de todos.
+
+**Varios servicios en una misma reserva.** Una reserva es un solo bloque de tiempo con un profesional que hace todos los servicios elegidos, uno tras otro; los servicios quedan en una tabla aparte (`BookingItem`) con su orden. Así la restricción anti-solape sigue protegiendo el bloque completo sin cambios. El bloque dura la suma de los servicios y las horas se ofrecen cada "servicio más corto" (Corte 30 min + Barba 20 min se ofrece cada 20 min), para no dejar huecos sin usar. Solo se ofrecen los profesionales que hacen todos los servicios elegidos. La migración pasó el servicio de cada reserva existente a la tabla nueva antes de borrar la columna antigua.
 
 **Concurrencia con varios profesionales.** La restricción anti-solape es por profesional, así que dos clientes pueden tomar la misma hora con profesionales distintos, pero nunca con el mismo. Lo cubren tests de integración contra PostgreSQL real, incluyendo 6 clientes simultáneos sobre 2 profesionales (solo 2 ganan). Los solapes y los deadlocks que PostgreSQL resuelve abortando una transacción se traducen a un 409 claro, y ninguna reserva queda duplicada.
 
@@ -194,7 +196,6 @@ docker-compose.yml
 **Técnicas**
 
 - Leer la zona horaria del negocio en la agenda en vez de fijarla en el frontend.
-- Probar BookingsService de punta a punta contra PostgreSQL (Jest ya corre en ESM, como TimeBlocksService).
 - Tests e2e de la app completa: `@nestjs/throttler` sigue en CommonJS y Jest solo carga ESM desde CommonJS en Node 24.9+.
 - Test de `computeSlots` para los días de cambio de horario de verano en Chile.
 - Tabla de transiciones permitidas entre estados de una reserva.
