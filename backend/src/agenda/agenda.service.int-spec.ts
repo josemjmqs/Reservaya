@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
 import type { PrismaService } from '../prisma/prisma.service';
@@ -141,6 +141,80 @@ describe('AgendaService.next', () => {
   it('no deja consultar un profesional de otro negocio', async () => {
     await expect(
       service.next(ownerUserId, otherMemberId, now),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('AgendaService.updateStatus', () => {
+  // Reservas en febrero de 2032 (antes del "ahora" fijo) para no tocar los tests de next
+  let serviceId: string;
+  let customerId: string;
+  const book = async (
+    time: string,
+    status: 'CONFIRMED' | 'CANCELLED' = 'CONFIRMED',
+    member = memberId,
+  ) =>
+    (
+      await prisma.booking.create({
+        data: {
+          startsAt: local('2032-02-16', time),
+          endsAt: DateTime.fromJSDate(local('2032-02-16', time))
+            .plus({ hours: 1 })
+            .toJSDate(),
+          status,
+          businessId,
+          memberId: member,
+          customerId,
+          items: { create: { serviceId, position: 0 } },
+        },
+      })
+    ).id;
+
+  beforeAll(async () => {
+    serviceId = (
+      await prisma.service.create({
+        data: { name: 'Color', durationMin: 60, businessId },
+      })
+    ).id;
+    customerId = (
+      await prisma.customer.create({
+        data: { name: 'E', email: `agenda-e-${run}@test.local`, businessId },
+      })
+    ).id;
+  });
+
+  it.each(['COMPLETED', 'NO_SHOW', 'CANCELLED'] as const)(
+    'marca una reserva como %s',
+    async (status) => {
+      const id = await book(
+        { COMPLETED: '09:00', NO_SHOW: '10:00', CANCELLED: '11:00' }[status],
+      );
+      expect(await service.updateStatus(ownerUserId, id, status)).toEqual({
+        id,
+        status,
+      });
+    },
+  );
+
+  it('reactivar una cancelada cuya hora ya tomó otra reserva responde 409', async () => {
+    const cancelled = await book('14:00', 'CANCELLED');
+    await book('14:30'); // otro cliente tomó parte de esa hora
+    await expect(
+      service.updateStatus(ownerUserId, cancelled, 'CONFIRMED'),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('reactivar una cancelada con la hora libre funciona', async () => {
+    const cancelled = await book('17:00', 'CANCELLED');
+    expect(
+      await service.updateStatus(ownerUserId, cancelled, 'CONFIRMED'),
+    ).toEqual({ id: cancelled, status: 'CONFIRMED' });
+  });
+
+  it('no se puede cambiar una reserva de otro negocio (404)', async () => {
+    const id = await book('18:00');
+    await expect(
+      service.updateStatus(otherUserId, id, 'CANCELLED'),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

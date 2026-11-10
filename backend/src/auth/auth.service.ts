@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -16,6 +17,19 @@ import { LoginDto } from './dto/login.dto';
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
 const VERIFY_MAX_PER_HOUR = 3;
+
+// Si otro registro con el mismo correo o slug entra entre la revisión previa y el
+// insert, la base lo impide (índice único): se responde 409 en vez de un error 500
+function conflictOnDuplicate(e: unknown): never {
+  if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+    throw new ConflictException(
+      JSON.stringify(e.meta?.target ?? '').includes('email')
+        ? 'Ese correo ya está registrado'
+        : 'Ese slug ya está en uso',
+    );
+  }
+  throw e;
+}
 
 @Injectable()
 export class AuthService {
@@ -60,7 +74,7 @@ export class AuthService {
         },
       });
       return user;
-    });
+    }).catch(conflictOnDuplicate);
 
     // sin await: el registro no espera al correo
     void this.notifications.emailVerification(user.email, user.name, verifyToken);
