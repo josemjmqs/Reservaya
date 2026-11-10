@@ -13,12 +13,12 @@ enum MemberRole {
 }
 
 model Business {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   name      String
-  slug      String   @unique
-  timezone  String   @default("America/Santiago")
+  slug      String      @unique
+  timezone  String      @default("America/Santiago")
   phone     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
   members   Member[]
   services  Service[]
   customers Customer[]
@@ -27,25 +27,27 @@ model Business {
 }
 
 model User {
-  id          String           @id @default(cuid())
-  email       String           @unique
-  name        String
-  password    String
-  createdAt   DateTime         @default(now())
-  members     Member[]
-  resetTokens PasswordResetToken[]
+  id              String                   @id @default(cuid())
+  email           String                   @unique
+  name            String
+  password        String
+  emailVerifiedAt DateTime?
+  createdAt       DateTime                 @default(now())
+  members         Member[]
+  resetTokens     PasswordResetToken[]
+  verifyTokens    EmailVerificationToken[]
 }
 
 model Member {
-  id          String         @id @default(cuid())
+  id          String          @id @default(cuid())
   role        MemberRole
-  bookable    Boolean        @default(true)
-  active      Boolean        @default(true)
+  bookable    Boolean         @default(true)
+  active      Boolean         @default(true)
   displayName String
   userId      String?
   businessId  String
-  user        User?          @relation(fields: [userId], references: [id])
-  business    Business       @relation(fields: [businessId], references: [id])
+  user        User?           @relation(fields: [userId], references: [id])
+  business    Business        @relation(fields: [businessId], references: [id])
   hours       WorkingHours[]
   bookings    Booking[]
   services    MemberService[]
@@ -64,16 +66,16 @@ model MemberService {
 }
 
 model Service {
-  id          String   @id @default(cuid())
+  id          String          @id @default(cuid())
   name        String
   description String?
   durationMin Int
   totalMin    Int?
   price       Int?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
   businessId  String
-  business    Business @relation(fields: [businessId], references: [id])
+  business    Business        @relation(fields: [businessId], references: [id])
   bookings    Booking[]
   members     MemberService[]
   category    String?
@@ -83,7 +85,7 @@ model Service {
 
 model WorkingHours {
   id       String @id @default(cuid())
-  weekday  Int    // 0 = domingo ... 6 = sábado
+  weekday  Int // 0 = domingo ... 6 = sábado
   opensAt  String // "09:00"
   closesAt String // "18:00"
   memberId String
@@ -156,4 +158,16 @@ model PasswordResetToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

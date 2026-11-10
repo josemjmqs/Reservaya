@@ -20,6 +20,7 @@ export interface PublicBusiness {
   slug: string;
   timezone: string;
   phone: string | null;
+  acceptsBookings: boolean;
   services: Omit<Service, "active">[];
   members: {
     id: string;

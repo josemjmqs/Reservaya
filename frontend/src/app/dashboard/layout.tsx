@@ -8,6 +8,8 @@ import { Button } from "@/components/ui";
 
 interface Me {
   name: string;
+  email: string;
+  emailVerifiedAt: string | null;
   members: { business: { name: string; slug: string } }[];
 }
 
@@ -18,6 +20,51 @@ const TABS = [
   { href: "/dashboard/hours", label: "Horario" },
   { href: "/dashboard/blocks", label: "Bloqueos" },
 ];
+
+function VerifyEmailBanner({ email }: { email: string }) {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const [error, setError] = useState("");
+
+  async function resend() {
+    setStatus("sending");
+    setError("");
+    try {
+      const r = await api<{ alreadyVerified: boolean }>(
+        "/auth/resend-verification",
+        { method: "POST" },
+      );
+      if (r.alreadyVerified) window.location.reload();
+      else setStatus("sent");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error inesperado");
+      setStatus("idle");
+    }
+  }
+
+  return (
+    <div className="border-b border-amber-200 bg-amber-50">
+      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-2 px-6 py-3 text-sm text-amber-900">
+        <p>
+          Confirma tu correo (<strong>{email}</strong>) para que tu página
+          pública empiece a recibir reservas.
+        </p>
+        {status === "sent" ? (
+          <span className="font-medium">Te enviamos un correo nuevo</span>
+        ) : (
+          <button
+            type="button"
+            onClick={resend}
+            disabled={status === "sending"}
+            className="font-medium underline hover:no-underline disabled:opacity-50"
+          >
+            {status === "sending" ? "Enviando..." : "Reenviar correo"}
+          </button>
+        )}
+        {error && <p className="w-full text-red-700">{error}</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardLayout({
   children,
@@ -77,6 +124,7 @@ export default function DashboardLayout({
           ))}
         </nav>
       </header>
+      {!me.emailVerifiedAt && <VerifyEmailBanner email={me.email} />}
       <div className="mx-auto max-w-3xl px-6 py-6">{children}</div>
     </div>
   );

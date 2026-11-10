@@ -60,6 +60,32 @@ export class NotificationsService {
     }
   }
 
+  async emailVerification(
+    to: string,
+    name: string,
+    token: string,
+  ): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('RESEND_API_KEY no configurada: correo omitido');
+      return;
+    }
+    const link = `${this.frontendUrl}/verify-email?token=${token}`;
+    try {
+      const { error } = await this.resend.emails.send({
+        from: this.from,
+        to,
+        subject: 'Confirma tu correo en Reservahoy',
+        html: `<p>Hola ${escapeHtml(name)},</p>
+        <p>Confirma tu correo para que tu página pública empiece a recibir reservas (el enlace vale 24 horas):</p>
+        <p><a href="${link}">Confirmar mi correo</a></p>
+        <p>Si no creaste una cuenta en Reservahoy, ignora este mensaje.</p>`,
+      });
+      if (error) this.logger.error(`Resend: ${error.message}`);
+    } catch (e) {
+      this.logger.error('Error enviando correo', e as Error);
+    }
+  }
+
   async passwordReset(to: string, name: string, token: string): Promise<void> {
     if (!this.resend) return;
     const link = `${this.frontendUrl}/reset-password?token=${token}`;
