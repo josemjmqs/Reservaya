@@ -106,7 +106,7 @@ export default function PublicPage({
 
   if (!business.acceptsBookings)
     return (
-      <main className="mx-auto max-w-md px-6 py-10">
+      <main className="mx-auto w-full max-w-md px-6 py-10">
         <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
         <p className="mt-2 text-gray-600">
           Este negocio todavía no recibe reservas online. Vuelve a intentarlo
@@ -130,7 +130,7 @@ export default function PublicPage({
     const link = `${window.location.origin}/reserva/${done.manageToken}`;
 
     return (
-      <main className="mx-auto max-w-md px-6 py-12">
+      <main className="mx-auto w-full max-w-md px-6 py-12">
         <Card className="p-6 text-center">
           <p className="text-3xl">✓</p>
           <h1 className="mt-2 text-xl font-semibold tracking-tight">
@@ -173,7 +173,7 @@ export default function PublicPage({
   }
 
   return (
-    <main className="mx-auto max-w-md px-6 py-10">
+    <main className="mx-auto w-full max-w-md px-6 py-10">
       <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
       <p className="mb-6 text-gray-600">Reserva tu hora online</p>
 
