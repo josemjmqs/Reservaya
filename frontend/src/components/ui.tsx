@@ -1,6 +1,9 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes } from 'react';
+import { twMerge } from 'tailwind-merge';
 
-const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ');
+// twMerge resuelve los choques: la clase que pasa quien usa el componente
+// (ej. `w-48`) reemplaza a la del componente (`w-full`) en vez de competir con ella
+const cx = (...c: (string | false | undefined)[]) => twMerge(c.filter(Boolean).join(' '));
 
 export function Button({
   variant = 'primary',
