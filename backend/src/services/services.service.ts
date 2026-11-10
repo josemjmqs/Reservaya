@@ -30,7 +30,8 @@ export class ServicesService {
     return this.prisma.service.create({
       data: {
         ...dto,
-        category: normalizeCategory(dto.category) ?? null,
+        category: normalizeText(dto.category) ?? null,
+        description: normalizeText(dto.description) ?? null,
         businessId,
         members: { create: owners.map((o) => ({ memberId: o.id })) },
       },
@@ -50,7 +51,11 @@ export class ServicesService {
     await this.findOwned(id, businessId);
     return this.prisma.service.update({
       where: { id },
-      data: { ...dto, category: normalizeCategory(dto.category) },
+      data: {
+        ...dto,
+        category: normalizeText(dto.category),
+        description: normalizeText(dto.description),
+      },
     });
   }
 
@@ -74,7 +79,8 @@ export class ServicesService {
   }
 }
 
-function normalizeCategory(value: string | null | undefined) {
+// undefined = no se modifica; vacío o solo espacios = se borra (null)
+function normalizeText(value: string | null | undefined) {
   if (value === undefined) return undefined;
   return value?.trim() || null;
 }
