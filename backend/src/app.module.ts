@@ -20,7 +20,11 @@ import { SettingsModule } from './settings/settings.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+    // 60 peticiones por minuto por IP. THROTTLE_LIMIT solo se sube en las pruebas
+    // e2e, donde todas las peticiones del navegador llegan con la misma IP
+    ThrottlerModule.forRoot([
+      { ttl: 60000, limit: Number(process.env.THROTTLE_LIMIT) || 60 },
+    ]),
     PrismaModule,
     StorageModule,
     AuthModule,
