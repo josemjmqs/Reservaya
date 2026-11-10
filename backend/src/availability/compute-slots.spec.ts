@@ -110,4 +110,26 @@ describe('computeSlots y horario de verano', () => {
       expect(first.toISOString()).toBe(esperado);
     }
   });
+
+  // El día exacto del cambio: en Chile ocurre a medianoche, así que ese día
+  // dura 25 h (abril) o 23 h (septiembre); el horario del local no debe moverse
+  it.each([
+    ['2026-04-05', 'vuelta al horario de invierno (día de 25 h)', '13'],
+    ['2026-09-06', 'cambio al horario de verano (día de 23 h)', '12'],
+  ])(
+    'el %s (%s) ofrece 09:00, 10:00 y 11:00 hora local',
+    (date, _, utcHour) => {
+      const slots = computeSlots({ ...common, date });
+      expect(slots).toHaveLength(3);
+      expect(slots[0].toISOString()).toBe(`${date}T${utcHour}:00:00.000Z`);
+      const local = slots.map((d) =>
+        d.toLocaleTimeString('en-GB', {
+          timeZone: 'America/Santiago',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      );
+      expect(local).toEqual(['09:00', '10:00', '11:00']);
+    },
+  );
 });
