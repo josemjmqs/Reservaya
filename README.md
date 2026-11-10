@@ -180,7 +180,12 @@ npm test                  # unitarios
 npm run test:integration  # contra PostgreSQL (usa DATABASE_URL)
 ```
 
-**Pruebas de punta a punta (Playwright)**, en `frontend/e2e/`: levantan la app completa con los datos de prueba y revisan que ningún negocio pueda ver ni cambiar datos de otro en ninguna ruta de la API, y que un cliente pueda reservar desde la página pública y el dueño la vea en su agenda. Con la base local, el seed corrido y backend (`:3000`) y frontend (`:3001`) levantados:
+**Pruebas de punta a punta (Playwright)**, en `frontend/e2e/`: levantan la app completa con los datos de prueba y revisan:
+- que ningún negocio pueda ver ni cambiar datos de otro en ninguna ruta de la API;
+- que un cliente pueda reservar desde la página pública y el dueño la vea en su agenda;
+- que un cliente pueda cancelar con su enlace y la hora vuelva a quedar libre;
+- el registro de un negocio nuevo (hasta el aviso de confirmar el correo);
+- que un servicio y un horario creados en el panel aparezcan en la página pública. Con la base local, el seed corrido y backend (`:3000`) y frontend (`:3001`) levantados:
 
 ```bash
 cd frontend
@@ -188,7 +193,7 @@ npx playwright install chromium   # solo la primera vez
 npm run e2e
 ```
 
-El CI las corre en el job `e2e` en cada PR.
+Levanta el backend con `THROTTLE_LIMIT=1000`: en las pruebas todas las peticiones del navegador llegan con la misma IP y el límite normal (60 por minuto) se alcanza. El CI las corre en el job `e2e` en cada PR.
 
 ### Problemas comunes
 
@@ -223,7 +228,6 @@ docker-compose.yml
 
 - Leer la zona horaria del negocio en la agenda en vez de fijarla en el frontend.
 - Tests e2e de la app completa: `@nestjs/throttler` sigue en CommonJS y Jest solo carga ESM desde CommonJS en Node 24.9+.
-- Test de `computeSlots` para los días de cambio de horario de verano en Chile.
 - Tabla de transiciones permitidas entre estados de una reserva.
 - Migrar a Prisma 7 cuando el ecosistema esté estable.
 - Modelar capacidad real (varios boxes o puestos simultáneos) con múltiples profesionales por negocio.
