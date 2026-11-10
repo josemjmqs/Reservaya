@@ -39,18 +39,20 @@ model User {
 }
 
 model Member {
-  id          String          @id @default(cuid())
-  role        MemberRole
-  bookable    Boolean         @default(true)
-  active      Boolean         @default(true)
-  displayName String
-  userId      String?
-  businessId  String
-  user        User?           @relation(fields: [userId], references: [id])
-  business    Business        @relation(fields: [businessId], references: [id])
-  hours       WorkingHours[]
-  bookings    Booking[]
-  services    MemberService[]
+  id                String          @id @default(cuid())
+  role              MemberRole
+  bookable          Boolean         @default(true)
+  active            Boolean         @default(true)
+  // Recibe un correo por cada reserva nueva hecha desde la página pública
+  notifyNewBookings Boolean         @default(true)
+  displayName       String
+  userId            String?
+  businessId        String
+  user              User?           @relation(fields: [userId], references: [id])
+  business          Business        @relation(fields: [businessId], references: [id])
+  hours             WorkingHours[]
+  bookings          Booking[]
+  services          MemberService[]
 
   @@unique([userId, businessId])
   @@index([businessId])
