@@ -155,8 +155,62 @@ export default function AgendaPage() {
       timeZone: TZ,
     });
 
-  const nextDate = (s: string) =>
-    new Date(s).toLocaleDateString("en-CA", { timeZone: TZ }); // YYYY-MM-DD
+  // Tarjeta de una reserva (la misma para el día y para la próxima)
+  const renderBooking = (b: AgendaBooking) => (
+    <li key={b.id} className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-medium">
+            {time(b.startsAt)} – {time(b.endsAt)}
+            <span className="font-normal text-gray-600">
+              {" "}
+              · {b.services.map((s) => s.name).join(" + ")}
+            </span>
+          </p>
+          <p className="mt-0.5 text-sm text-gray-600">
+            {b.customer.name} · {b.customer.email}
+            {b.customer.phone && ` · ${b.customer.phone}`}
+          </p>
+          {members.length > 1 && (
+            <p className="mt-0.5 text-xs text-gray-500">
+              Con {b.member.displayName}
+            </p>
+          )}
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${BADGE[b.status]}`}
+        >
+          {LABELS[b.status]}
+        </span>
+      </div>
+
+      {(b.status === "CONFIRMED" || b.status === "PENDING") && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            className="px-3 py-1"
+            onClick={() => setStatus(b.id, "COMPLETED")}
+          >
+            Completada
+          </Button>
+          <Button
+            variant="secondary"
+            className="px-3 py-1"
+            onClick={() => setStatus(b.id, "NO_SHOW")}
+          >
+            No se presentó
+          </Button>
+          <Button
+            variant="danger"
+            className="px-3 py-1"
+            onClick={() => setStatus(b.id, "CANCELLED")}
+          >
+            Cancelar
+          </Button>
+        </div>
+      )}
+    </li>
+  );
 
   return (
     <div>
@@ -202,90 +256,27 @@ export default function AgendaPage() {
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
-        {bookings.map((b) => (
-          <li key={b.id} className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-medium">
-                  {time(b.startsAt)} – {time(b.endsAt)}
-                  <span className="font-normal text-gray-600">
-                    {" "}
-                    · {b.services.map((s) => s.name).join(" + ")}
-                  </span>
-                </p>
-                <p className="mt-0.5 text-sm text-gray-600">
-                  {b.customer.name} · {b.customer.email}
-                  {b.customer.phone && ` · ${b.customer.phone}`}
-                </p>
-                {members.length > 1 && (
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    Con {b.member.displayName}
-                  </p>
-                )}
-              </div>
-              <span
-                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${BADGE[b.status]}`}
-              >
-                {LABELS[b.status]}
-              </span>
-            </div>
-
-            {(b.status === "CONFIRMED" || b.status === "PENDING") && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Button
-                  variant="secondary"
-                  className="px-3 py-1"
-                  onClick={() => setStatus(b.id, "COMPLETED")}
-                >
-                  Completada
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="px-3 py-1"
-                  onClick={() => setStatus(b.id, "NO_SHOW")}
-                >
-                  No se presentó
-                </Button>
-                <Button
-                  variant="danger"
-                  className="px-3 py-1"
-                  onClick={() => setStatus(b.id, "CANCELLED")}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            )}
-          </li>
-        ))}
+        {bookings.map(renderBooking)}
         {bookings.length === 0 && (
           <li className="p-6 text-center text-sm text-gray-500">
             Sin reservas este día.
-            {showNext && next && (
-              <button
-                type="button"
-                onClick={() => setDate(nextDate(next.startsAt))}
-                className="mx-auto mt-4 block w-full max-w-sm rounded-lg border border-gray-200 bg-gray-50 p-3 text-left hover:bg-gray-100"
-              >
-                <span className="block text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Próxima reserva
-                </span>
-                <span className="mt-1 block font-medium capitalize text-gray-900">
-                  {nextDay(next.startsAt)} · {time(next.startsAt)}
-                </span>
-                <span className="mt-0.5 block text-gray-600">
-                  {next.customer.name} ·{" "}
-                  {next.services.map((s) => s.name).join(" + ")}
-                </span>
-                {members.length > 1 && (
-                  <span className="mt-0.5 block text-xs text-gray-500">
-                    Con {next.member.displayName}
-                  </span>
-                )}
-              </button>
-            )}
           </li>
         )}
       </ul>
+
+      {showNext && next && (
+        <section className="mt-8">
+          <h2 className="text-base font-semibold tracking-tight">
+            Próxima reserva
+          </h2>
+          <p className="mb-3 mt-1 text-sm capitalize text-gray-600">
+            {nextDay(next.startsAt)}
+          </p>
+          <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
+            {renderBooking(next)}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
