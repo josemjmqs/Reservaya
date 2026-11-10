@@ -6,6 +6,9 @@ import { api } from "@/lib/api";
 import { Button, Card, Input } from "@/components/ui";
 import type { BookingResult, PublicBusiness } from "@/lib/types";
 import { ServicePicker } from "@/components/ServicePicker";
+import { formatTotal, publicDuration } from "@/lib/format";
+
+const MAX_SERVICES = 5; // igual que MAX_SERVICES_PER_BOOKING en el backend
 
 function todayISO() {
   const d = new Date();
@@ -22,7 +25,8 @@ export default function PublicPage({
   const [business, setBusiness] = useState<PublicBusiness | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [memberId, setMemberId] = useState("");
-  const [serviceId, setServiceId] = useState("");
+  // servicios elegidos, en el orden en que se marcaron (es el orden en que se hacen)
+  const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [date, setDate] = useState(todayISO());
   const [slots, setSlots] = useState<string[]>([]);
   const [startsAt, setStartsAt] = useState("");
@@ -37,15 +41,17 @@ export default function PublicPage({
       .catch(() => setNotFound(true));
   }, [slug]);
 
+  const serviceKey = serviceIds.join(",");
+
   const fetchSlots = useCallback(
     (signal?: AbortSignal) =>
       api<{ slots: string[] }>(
-        `/public/${slug}/availability?serviceId=${serviceId}&date=${date}${
+        `/public/${slug}/availability?serviceIds=${serviceKey}&date=${date}${
           memberId ? `&memberId=${memberId}` : ""
         }`,
         { signal },
       ),
-    [slug, serviceId, date, memberId],
+    [slug, serviceKey, date, memberId],
   );
 
   // Recarga las horas tras un error al reservar (ej. alguien tomó la hora)
@@ -59,7 +65,7 @@ export default function PublicPage({
   }
 
   useEffect(() => {
-    if (!serviceId || !date) return;
+    if (!serviceKey || !date) return;
     const controller = new AbortController();
     fetchSlots(controller.signal)
       .then((r) => {
@@ -72,7 +78,7 @@ export default function PublicPage({
         setError(err instanceof Error ? err.message : "Error inesperado");
       });
     return () => controller.abort();
-  }, [fetchSlots, serviceId, date]);
+  }, [fetchSlots, serviceKey, date]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,7 +88,7 @@ export default function PublicPage({
       const result = await api<BookingResult>(`/public/${slug}/bookings`, {
         method: "POST",
         body: JSON.stringify({
-          serviceId,
+          serviceIds,
           startsAt,
           ...(memberId && { memberId }),
           name: form.name,
@@ -122,9 +128,30 @@ export default function PublicPage({
       timeZone: business.timezone,
     });
 
+  const selected = serviceIds
+    .map((id) => business.services.find((s) => s.id === id))
+    .filter((s) => s !== undefined);
+  // Un mismo profesional hace todos los servicios elegidos
   const eligible = business.members.filter((m) =>
-    m.services.some((s) => s.serviceId === serviceId),
+    serviceIds.every((id) => m.services.some((s) => s.serviceId === id)),
   );
+  const noOneDoesAll = selected.length > 1 && eligible.length === 0;
+  const totalMin = selected.reduce((sum, s) => sum + s.durationMin, 0);
+  const totalPrice = selected.every((s) => s.price !== null)
+    ? selected.reduce((sum, s) => sum + (s.price ?? 0), 0)
+    : null;
+
+  function toggleService(id: string) {
+    setServiceIds((ids) =>
+      ids.includes(id)
+        ? ids.filter((x) => x !== id)
+        : ids.length < MAX_SERVICES
+          ? [...ids, id]
+          : ids,
+    );
+    setMemberId("");
+    setStartsAt("");
+  }
 
   if (done) {
     const link = `${window.location.origin}/reserva/${done.manageToken}`;
@@ -144,6 +171,9 @@ export default function PublicPage({
               timeZone: business.timezone,
             })}{" "}
             a las {fmt(done.startsAt)} en {business.name}.
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            {selected.map((s) => s.name).join(" + ")}
           </p>
 
           <div className="mt-5 rounded-lg bg-gray-50 p-3 text-left">
@@ -177,55 +207,68 @@ export default function PublicPage({
       <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
       <p className="mb-6 text-gray-600">Reserva tu hora online</p>
 
-      <h2 className="mb-2 text-sm font-medium text-gray-700">Servicio</h2>
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <h2 className="text-sm font-medium text-gray-700">Servicios</h2>
+        <p className="text-xs text-gray-500">
+          {serviceIds.length >= MAX_SERVICES
+            ? `Máximo ${MAX_SERVICES} por reserva`
+            : "Puedes elegir más de uno"}
+        </p>
+      </div>
       <ServicePicker
         services={business.services}
-        selectedId={serviceId}
-        onSelect={(id) => {
-          setServiceId(id);
-          setMemberId("");
-        }}
+        selectedIds={serviceIds}
+        onToggle={toggleService}
+        maxReached={serviceIds.length >= MAX_SERVICES}
       />
 
-      {eligible.length > 1 && (
-        <>
-          <h2 className="mb-2 mt-6 text-sm font-medium text-gray-700">
-            Profesional
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {[{ id: "", displayName: "Sin preferencia" }, ...eligible].map(
-              (m) => (
-                <button
-                  key={m.id || "any"}
-                  type="button"
-                  onClick={() => setMemberId(m.id)}
-                  className={`rounded-lg border px-3 py-1.5 text-sm transition ${
-                    memberId === m.id
-                      ? "border-indigo-600 bg-indigo-600 text-white"
-                      : "border-gray-200 bg-white hover:border-indigo-300"
-                  }`}
-                >
-                  {m.displayName}
-                </button>
-              ),
-            )}
-          </div>
-        </>
+      {/* Barra fija abajo mientras se elige: muestra lo elegido aunque la
+          lista de servicios sea larga y el resumen quede fuera de la pantalla */}
+      {selected.length > 0 && (
+        <div className="sticky bottom-0 z-10 -mx-6 mt-4 border-t border-gray-200 bg-white/95 px-6 py-3 backdrop-blur">
+          {noOneDoesAll ? (
+            <p className="text-sm text-amber-800">
+              Ningún profesional hace todos estos servicios en una misma
+              visita. Quita alguno o resérvalos por separado.
+            </p>
+          ) : (
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {selected.map((s) => s.name).join(" + ")}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {selected.length === 1
+                    ? publicDuration(selected[0].durationMin, selected[0].totalMin)
+                    : `${selected.length} servicios seguidos · ${formatTotal(totalMin)}`}
+                  {totalPrice !== null &&
+                    ` · $${totalPrice.toLocaleString("es-CL")}`}
+                </p>
+              </div>
+              <a
+                href="#dia-y-hora"
+                className="shrink-0 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              >
+                Ver horas
+              </a>
+            </div>
+          )}
+        </div>
       )}
 
-      {serviceId && (
+      {selected.length > 0 && !noOneDoesAll && (
         <>
-          <h2 className="mb-2 mt-6 text-sm font-medium text-gray-700">
+          <h2
+            id="dia-y-hora"
+            className="mb-2 mt-6 scroll-mt-6 text-sm font-medium text-gray-700"
+          >
             Día y hora
           </h2>
-          {(() => {
-            const s = business.services.find((x) => x.id === serviceId);
-            return s?.totalMin && s.totalMin !== s.durationMin ? (
-              <p className="mb-2 text-xs text-gray-500">
-                Elige la hora en que llegarás al local.
-              </p>
-            ) : null;
-          })()}
+          {selected.some((s) => s.totalMin && s.totalMin !== s.durationMin) && (
+            <p className="mb-2 text-xs text-gray-500">
+              Elige la hora en que llegarás al local.
+            </p>
+          )}
           <Input
             type="date"
             value={date}

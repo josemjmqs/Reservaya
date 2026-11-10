@@ -75,8 +75,8 @@ beforeAll(async () => {
       endsAt: local('2031-04-15', '11:00'),
       businessId,
       memberId,
-      serviceId: svc.id,
       customerId: customer.id,
+      items: { create: { serviceId: svc.id, position: 0 } },
     },
   });
 });

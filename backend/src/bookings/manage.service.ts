@@ -17,12 +17,16 @@ export class ManageBookingService {
         startsAt: true,
         endsAt: true,
         status: true,
-        service: { select: { name: true, durationMin: true } },
+        items: {
+          orderBy: { position: 'asc' },
+          select: { service: { select: { name: true, durationMin: true } } },
+        },
         business: { select: { name: true, timezone: true, phone: true } },
       },
     });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
-    return booking;
+    const { items, ...rest } = booking;
+    return { ...rest, services: items.map((i) => i.service) };
   }
 
   get(token: string) {

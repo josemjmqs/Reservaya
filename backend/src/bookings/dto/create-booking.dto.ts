@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  IsArray,
   IsEmail,
   IsISO8601,
   IsOptional,
@@ -7,10 +9,22 @@ import {
   MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { MAX_SERVICES_PER_BOOKING } from '../../availability/booking-limits';
 
 export class CreateBookingDto {
+  // Uno o más servicios, en el orden en que se hacen (los hace un mismo profesional)
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMaxSize(MAX_SERVICES_PER_BOOKING, {
+    message: `Puedes elegir hasta ${MAX_SERVICES_PER_BOOKING} servicios por reserva`,
+  })
+  serviceIds?: string[];
+
+  // Compatibilidad con el frontend anterior durante el despliegue; se puede quitar después
+  @IsOptional()
   @IsString()
-  serviceId: string;
+  serviceId?: string;
 
   @IsOptional()
   @IsString()

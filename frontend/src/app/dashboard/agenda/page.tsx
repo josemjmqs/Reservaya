@@ -175,7 +175,7 @@ export default function AgendaPage() {
                   {time(b.startsAt)} – {time(b.endsAt)}
                   <span className="font-normal text-gray-600">
                     {" "}
-                    · {b.service.name}
+                    · {b.services.map((s) => s.name).join(" + ")}
                   </span>
                 </p>
                 <p className="mt-0.5 text-sm text-gray-600">

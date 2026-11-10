@@ -30,6 +30,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Un negocio recibe reservas solo si su dueño tiene `emailVerifiedAt` (`AvailabilityService.acceptsBookings`)
 - Los tokens de un solo uso (reset de contraseña, verificación de correo) se guardan solo como hash SHA-256
 - Al crear una ruta nueva en el frontend, agregarla a `RESERVED_SLUGS` (`register.dto.ts`)
+- Una reserva tiene uno o más servicios en `BookingItem` (orden en `position`) y los hace un solo profesional seguidos: el bloque dura la suma (`blockFor`). Usar `AvailabilityService.resolveServices` y `membersForServices`; máximo en `MAX_SERVICES_PER_BOOKING`
 - Fotos: se guarda solo `imageKey` (ruta en el bucket) y la API responde `imageUrl` armada con `R2_PUBLIC_URL` (`StorageService.urlFor`). El tipo se valida por los bytes (`detectImageType`), nunca por el nombre o el Content-Type. Sin variables `R2_*` la subida responde 503
 
 ## Tests

@@ -8,7 +8,10 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { DateTime } from 'luxon';
-import { AvailabilityService } from '../availability/availability.service';
+import {
+  AvailabilityService,
+  blockFor,
+} from '../availability/availability.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -45,24 +48,24 @@ export class BookingsService {
       );
     }
 
-    const service = await this.prisma.service.findFirst({
-      where: { id: dto.serviceId, businessId: business.id, active: true },
-    });
-    if (!service) throw new NotFoundException('Servicio no encontrado');
+    const services = await this.availability.resolveServices(
+      business.id,
+      dto.serviceIds ?? (dto.serviceId ? [dto.serviceId] : []),
+    );
+    const { durationMin, stepMin } = blockFor(services);
 
-    // Profesionales que pueden hacer este servicio (o solo el elegido)
-    const candidates = await this.prisma.member.findMany({
-      where: {
-        businessId: business.id,
-        active: true,
-        bookable: true,
-        ...(dto.memberId && { id: dto.memberId }),
-        services: { some: { serviceId: service.id } },
-      },
-      select: { id: true },
-    });
+    // Profesionales que hacen todos los servicios elegidos (o solo el elegido)
+    const candidates = await this.availability.membersForServices(
+      business.id,
+      services.map((s) => s.id),
+      dto.memberId,
+    );
     if (!candidates.length) {
-      throw new ConflictException('Profesional no disponible');
+      throw new ConflictException(
+        services.length > 1
+          ? 'Ningún profesional disponible hace todos esos servicios'
+          : 'Profesional no disponible',
+      );
     }
 
     const startsAt = new Date(dto.startsAt);
@@ -79,7 +82,8 @@ export class BookingsService {
         day.weekday % 7,
         day.startOf('day').toJSDate(),
         day.endOf('day').toJSDate(),
-        service.durationMin,
+        durationMin,
+        stepMin,
       );
       if (slots.includes(startsAt.toISOString())) {
         memberId = c.id;
@@ -88,7 +92,7 @@ export class BookingsService {
     }
     if (!memberId) throw new ConflictException('Esa hora no está disponible');
 
-    const endsAt = new Date(startsAt.getTime() + service.durationMin * 60000);
+    const endsAt = new Date(startsAt.getTime() + durationMin * 60000);
 
     try {
       const booking = await this.prisma.$transaction(async (tx) => {
@@ -111,8 +115,13 @@ export class BookingsService {
             notes: dto.notes,
             businessId: business.id,
             memberId: memberId!,
-            serviceId: service.id,
             customerId: customer.id,
+            items: {
+              create: services.map((s, position) => ({
+                serviceId: s.id,
+                position,
+              })),
+            },
           },
         });
       });
@@ -121,7 +130,7 @@ export class BookingsService {
         to: dto.email,
         customerName: dto.name,
         businessName: business.name,
-        serviceName: service.name,
+        serviceName: services.map((s) => s.name).join(' + '),
         startsAt: booking.startsAt,
         timezone: business.timezone,
         manageToken: booking.manageToken,

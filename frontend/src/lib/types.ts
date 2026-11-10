@@ -52,7 +52,7 @@ export interface AgendaBooking {
   endsAt: string;
   status: BookingStatus;
   notes: string | null;
-  service: { name: string; durationMin: number };
+  services: { name: string; durationMin: number }[];
   member: { id: string; displayName: string };
   customer: { name: string; email: string; phone: string | null };
 }
@@ -62,7 +62,7 @@ export interface ManagedBooking {
   startsAt: string;
   endsAt: string;
   status: BookingStatus;
-  service: { name: string; durationMin: number };
+  services: { name: string; durationMin: number }[];
   business: { name: string; timezone: string; phone: string | null };
 }
 
