@@ -43,6 +43,10 @@ function HoursContent() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Profesional cuyo horario ya llegó del servidor. Hasta entonces la semana
+  // está vacía: guardar en ese momento borraría el horario real
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const loaded = loadedFor === (memberId ?? '');
 
   useEffect(() => {
     const url = memberId
@@ -62,6 +66,7 @@ function HoursContent() {
           };
         }
         setDays(next);
+        setLoadedFor(memberId ?? '');
       })
       .catch((e) => setError(e.message));
 
@@ -120,7 +125,13 @@ function HoursContent() {
         Marca los días en que atiende y define el horario de cada uno.
       </p>
 
-      <ul className="my-4 divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
+      {!loaded && !error && (
+        <p className="my-4 text-sm text-gray-500">Cargando horario...</p>
+      )}
+      <ul
+        hidden={!loaded}
+        className="my-4 divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm"
+      >
         {DAYS.map(({ weekday, label }) => {
           const day = days[weekday];
           return (
@@ -172,7 +183,7 @@ function HoursContent() {
         <p className="mb-3 text-sm text-green-700">Horario guardado.</p>
       )}
 
-      <Button onClick={save} disabled={saving}>
+      <Button onClick={save} disabled={saving || !loaded}>
         {saving ? 'Guardando...' : 'Guardar horario'}
       </Button>
     </div>
