@@ -10,4 +10,11 @@ export class HealthController {
     await this.prisma.$queryRaw`SELECT 1`;
     return { status: 'ok', database: 'up' };
   }
+
+  // Para el monitor que mantiene despierto el backend (Render gratis se duerme
+  // tras 15 min sin tráfico). No toca la base: así Neon puede dormir tranquila
+  @Get('live')
+  live() {
+    return { status: 'ok' };
+  }
 }
