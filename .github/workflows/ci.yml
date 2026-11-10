@@ -72,3 +72,75 @@ jobs:
       - run: npm ci
       - run: npx prisma migrate deploy
       - run: npm run test:integration
+  # App completa con el seed: aislamiento entre negocios en toda la API y el
+  # flujo de reserva en el navegador (frontend/e2e)
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: reservaya
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: reservaya_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U reservaya"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://reservaya:ci_password@localhost:5432/reservaya_e2e?schema=public
+      JWT_SECRET: e2e-secret
+      FRONTEND_URL: http://localhost:3001
+      API_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Backend con datos de prueba
+        working-directory: backend
+        run: |
+          npm ci
+          npx prisma migrate deploy
+          npx prisma db seed
+          npm run build
+          nohup node dist/main > ../backend.log 2>&1 &
+
+      - name: Frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          nohup npx next start -p 3001 > ../frontend.log 2>&1 &
+
+      - name: Esperar a que respondan
+        run: |
+          for url in http://localhost:3000/health http://localhost:3001/login; do
+            for i in $(seq 1 30); do curl -sf "$url" > /dev/null && break; sleep 2; done
+            curl -sf "$url" > /dev/null || { cat backend.log frontend.log; exit 1; }
+          done
+
+      - name: Playwright
+        working-directory: frontend
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test
+
+      - name: Informe si falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            backend.log
+            frontend.log
+          retention-days: 7

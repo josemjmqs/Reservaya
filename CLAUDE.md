@@ -39,6 +39,8 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Jest corre en ESM porque NestJS 12 es solo ESM: configuración en `jest.config.ts`, `test/jest-int.json` y `tsconfig.spec.json`; los scripts usan `node --experimental-vm-modules`
 - Los servicios se prueban instanciándolos con un `PrismaClient` real (ej. `time-blocks.service.int-spec.ts`)
 - Todavía no se puede cargar `AppModule` ni `AuthController` en Jest: `@nestjs/throttler` es CommonJS y hace `require` de `@nestjs/common` (ESM); Jest lo soporta recién en Node 24.9+
+- Pruebas e2e con Playwright en `frontend/e2e/` (`npm run e2e` en `frontend/`, con backend y frontend levantados y el seed corrido): `api-isolation.spec.ts` prueba todas las rutas del panel (401 sin sesión, 404 con otro negocio) y `booking-flow.spec.ts` el flujo de reserva. Al crear una ruta nueva en el backend, agregarla a `PANEL_ROUTES` (con su caso de aislamiento) o a `PUBLIC_ROUTES`: la prueba falla si hay rutas sin clasificar
+- Cada carpeta de `frontend/src/app` debe estar en `RESERVED_SLUGS`: lo revisa `auth-dto.spec.ts`
 
 ## Prisma y migraciones
 - No editar migraciones ya aplicadas; crear nuevas con `npx prisma migrate dev --name ...`
@@ -52,7 +54,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - No ejecutar comandos destructivos ni contra producción sin confirmación explícita
 
 ## Flujo de trabajo
-- Una rama por función (`feat/...`, `fix/...`, `docs/...`), PR, CI en verde (`backend`, `frontend`, `integration`) y merge
+- Una rama por función (`feat/...`, `fix/...`, `docs/...`), PR, CI en verde (`backend`, `frontend`, `integration`, `e2e`) y merge
 - Por ahora Claude mergea los PR apenas el CI está en verde (mergear a `main` despliega a producción). Cuando el proyecto tenga usuarios reales, el dueño pasará a mergear él mismo tras revisar
 - Los push y PR se hacen desde la sesión en la nube (el computador del dueño no expone credenciales de GitHub): `git bundle` en la carpeta local, push desde un clon en la nube y PR con `gh api` (REST; GraphQL no está disponible)
 - Para volver a `main` tras un merge usar `git switch -C main origin/main`, nunca `git checkout main` con un `main` local desactualizado
