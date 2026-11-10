@@ -27,6 +27,9 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Sesión: JWT en cookie `httpOnly` (también se acepta header Bearer para pruebas)
 - Correos: nunca deben romper el flujo principal (el envío captura sus errores)
 - Los correos se normalizan a minúsculas (trim + lowercase)
+- Un negocio recibe reservas solo si su dueño tiene `emailVerifiedAt` (`AvailabilityService.acceptsBookings`)
+- Los tokens de un solo uso (reset de contraseña, verificación de correo) se guardan solo como hash SHA-256
+- Al crear una ruta nueva en el frontend, agregarla a `RESERVED_SLUGS` (`register.dto.ts`)
 
 ## Tests
 - Jest corre en ESM porque NestJS 12 es solo ESM: configuración en `jest.config.ts`, `test/jest-int.json` y `tsconfig.spec.json`; los scripts usan `node --experimental-vm-modules`
@@ -51,6 +54,5 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 
 ## Pendientes conocidos
 - Recordatorios por correo 24 h antes
-- Verificación de correo al registrarse
 - Correo de contacto con dominio propio (Cloudflare Email Routing)
 - WhatsApp, trabajadores con cuenta propia, campos personalizados, pagos

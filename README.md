@@ -28,6 +28,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 
 **Negocio**
 - Registro e inicio de sesión (sesión con cookie `httpOnly`)
+- Verificación del correo al registrarse: la página pública recibe reservas recién cuando el dueño confirma su correo
 - Gestión de servicios: categoría, tiempo de atención, duración total estimada, precio opcional, edición y activar/desactivar
 - Equipo: profesionales con los servicios que realizan y su propio horario semanal
 - Agenda diaria con filtro por profesional, estados de la reserva (completada, no se presentó, cancelada) y actualización automática
@@ -83,6 +84,8 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 **Concurrencia con varios profesionales.** La restricción anti-solape es por profesional, así que dos clientes pueden tomar la misma hora con profesionales distintos, pero nunca con el mismo. Lo cubren tests de integración contra PostgreSQL real, incluyendo 6 clientes simultáneos sobre 2 profesionales (solo 2 ganan). Los solapes y los deadlocks que PostgreSQL resuelve abortando una transacción se traducen a un 409 claro, y ninguna reserva queda duplicada.
 
 **Correo transaccional con dominio verificado.** Los correos salen de un subdominio dedicado (`mail.`) con DKIM y SPF verificados y DMARC en modo monitoreo, lo que mejora la entrega y aísla su reputación. El envío nunca bloquea la reserva, y un límite por correo (3 por hora) junto al rate limit por IP evita que el formulario se use para enviar correo a terceros.
+
+**Verificación de correo antes de recibir reservas.** Al registrarse se envía un enlace de un solo uso (vale 24 horas; en la base solo se guarda su hash SHA-256). El panel funciona desde el primer momento, pero la página pública no acepta reservas hasta que el dueño confirma su correo: así una cuenta creada con un correo ajeno no puede usar la plataforma para enviar correos a terceros. El reenvío está limitado a 3 por hora y las cuentas anteriores a esta función quedaron verificadas en la migración.
 
 **Respaldos cifrados y verificados.** Un workflow diario de GitHub Actions hace `pg_dump`, cifra el archivo con `age` y lo sube a un bucket privado de Cloudflare R2 con retención de 30 días. La restauración se probó de punta a punta en una base limpia.
 
