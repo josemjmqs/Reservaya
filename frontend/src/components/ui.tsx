@@ -1,6 +1,9 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes } from 'react';
+import { twMerge } from 'tailwind-merge';
 
-const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ');
+// twMerge resuelve los choques: la clase que pasa quien usa el componente
+// (ej. `w-48`) reemplaza a la del componente (`w-full`) en vez de competir con ella
+const cx = (...c: (string | false | undefined)[]) => twMerge(c.filter(Boolean).join(' '));
 
 export function Button({
   variant = 'primary',
@@ -54,6 +57,27 @@ export function Textarea({
         className,
       )}
     />
+  );
+}
+
+// Campo con etiqueta visible: el placeholder desaparece al escribir, la etiqueta no
+export function Field({
+  label,
+  hint,
+  className,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={cx('flex flex-col gap-1', className)}>
+      <span className="text-xs font-medium text-gray-700">{label}</span>
+      {children}
+      {hint && <span className="text-xs text-gray-500">{hint}</span>}
+    </label>
   );
 }
 
