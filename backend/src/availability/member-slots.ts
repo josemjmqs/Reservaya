@@ -10,6 +10,7 @@ export interface MemberSlotsInput {
   dayStart: Date;
   dayEnd: Date;
   durationMin: number;
+  stepMin?: number; // cada cuánto se ofrece una hora (por defecto, la duración)
 }
 
 type Db = Pick<PrismaClient, 'workingHours' | 'booking' | 'timeBlock'>;
@@ -53,6 +54,7 @@ export async function findMemberSlots(
     opensAt: hours.opensAt,
     closesAt: hours.closesAt,
     durationMin: input.durationMin,
+    stepMin: input.stepMin,
     busy: [...bookings, ...blocks],
   }).map((s) => s.toISOString());
 }

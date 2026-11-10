@@ -39,7 +39,7 @@ export class AgendaService {
     );
     const end = DateTime.fromISO(to, { zone: business.timezone }).endOf('day');
 
-    return this.prisma.booking.findMany({
+    const bookings = await this.prisma.booking.findMany({
       where: {
         businessId: business.id,
         ...(memberId && { memberId }),
@@ -52,11 +52,18 @@ export class AgendaService {
         endsAt: true,
         status: true,
         notes: true,
-        service: { select: { name: true, durationMin: true } },
+        items: {
+          orderBy: { position: 'asc' },
+          select: { service: { select: { name: true, durationMin: true } } },
+        },
         customer: { select: { name: true, email: true, phone: true } },
         member: { select: { id: true, displayName: true } },
       },
     });
+    return bookings.map(({ items, ...b }) => ({
+      ...b,
+      services: items.map((i) => i.service),
+    }));
   }
 
   async updateStatus(userId: string, id: string, status: string) {

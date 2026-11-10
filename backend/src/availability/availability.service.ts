@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { MAX_SERVICES_PER_BOOKING } from './booking-limits';
 import { findMemberSlots } from './member-slots';
 
 @Injectable()
@@ -13,31 +18,24 @@ export class AvailabilityService {
 
   async getSlots(
     slug: string,
-    serviceId: string,
+    serviceIds: string[],
     date: string,
     memberId?: string,
   ) {
     const business = await this.prisma.business.findUnique({ where: { slug } });
     if (!business) throw new NotFoundException('Negocio no encontrado');
 
-    const service = await this.prisma.service.findFirst({
-      where: { id: serviceId, businessId: business.id, active: true },
-    });
-    if (!service) throw new NotFoundException('Servicio no encontrado');
+    const services = await this.resolveServices(business.id, serviceIds);
+    const { durationMin, stepMin } = blockFor(services);
 
     const day = DateTime.fromISO(date, { zone: business.timezone });
     if (!day.isValid) return { slots: [] as string[] };
 
-    const members = await this.prisma.member.findMany({
-      where: {
-        businessId: business.id,
-        active: true,
-        bookable: true,
-        ...(memberId && { id: memberId }),
-        services: { some: { serviceId } },
-      },
-      select: { id: true },
-    });
+    const members = await this.membersForServices(
+      business.id,
+      services.map((s) => s.id),
+      memberId,
+    );
 
     const weekday = day.weekday % 7;
     const dayStart = day.startOf('day').toJSDate();
@@ -53,7 +51,8 @@ export class AvailabilityService {
         weekday,
         dayStart,
         dayEnd,
-        service.durationMin,
+        durationMin,
+        stepMin,
       );
       slots.forEach((s) => all.add(s));
     }
@@ -70,6 +69,7 @@ export class AvailabilityService {
     dayStart: Date,
     dayEnd: Date,
     durationMin: number,
+    stepMin?: number,
   ): Promise<string[]> {
     return findMemberSlots(this.prisma, {
       memberId,
@@ -80,6 +80,48 @@ export class AvailabilityService {
       dayStart,
       dayEnd,
       durationMin,
+      stepMin,
+    });
+  }
+
+  // Servicios pedidos en el orden del cliente y sin repetidos. Todos deben estar
+  // activos y ser de este negocio (también la usa bookings)
+  async resolveServices(businessId: string, serviceIds: string[]) {
+    const ids = [...new Set(serviceIds)];
+    if (!ids.length)
+      throw new BadRequestException('Elige al menos un servicio');
+    if (ids.length > MAX_SERVICES_PER_BOOKING) {
+      throw new BadRequestException(
+        `Puedes elegir hasta ${MAX_SERVICES_PER_BOOKING} servicios por reserva`,
+      );
+    }
+    const found = await this.prisma.service.findMany({
+      where: { id: { in: ids }, businessId, active: true },
+    });
+    if (found.length !== ids.length) {
+      throw new NotFoundException('Servicio no encontrado');
+    }
+    const byId = new Map(found.map((s) => [s.id, s]));
+    return ids.map((id) => byId.get(id)!);
+  }
+
+  // Profesionales que hacen TODOS los servicios (uno solo los hace seguidos)
+  membersForServices(
+    businessId: string,
+    serviceIds: string[],
+    memberId?: string,
+  ) {
+    return this.prisma.member.findMany({
+      where: {
+        businessId,
+        active: true,
+        bookable: true,
+        ...(memberId && { id: memberId }),
+        AND: serviceIds.map((serviceId) => ({
+          services: { some: { serviceId } },
+        })),
+      },
+      select: { id: true },
     });
   }
 
@@ -137,4 +179,14 @@ export class AvailabilityService {
     });
     return verifiedOwners > 0;
   }
+}
+
+// Bloque de agenda para varios servicios seguidos: dura la suma, y las horas se
+// ofrecen cada "servicio más corto" (con uno solo, igual que siempre: su duración)
+export function blockFor(services: { durationMin: number }[]) {
+  const durations = services.map((s) => s.durationMin);
+  return {
+    durationMin: durations.reduce((a, b) => a + b, 0),
+    stepMin: Math.min(...durations),
+  };
 }
