@@ -15,6 +15,7 @@ import { AgendaModule } from './agenda/agenda.module';
 import { MembersModule } from './members/members.module';
 import { TimeBlocksModule } from './time-blocks/time-blocks.module';
 import { StorageModule } from './storage/storage.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { StorageModule } from './storage/storage.module';
     AgendaModule,
     MembersModule,
     TimeBlocksModule,
+    SettingsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

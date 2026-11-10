@@ -5,6 +5,7 @@ import {
   NotFoundException,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { DateTime } from 'luxon';
@@ -18,6 +19,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly availability: AvailabilityService,
@@ -135,6 +138,7 @@ export class BookingsService {
         timezone: business.timezone,
         manageToken: booking.manageToken,
       });
+      void this.notifyStaff(booking.id);
 
       return {
         id: booking.id,
@@ -148,6 +152,57 @@ export class BookingsService {
         throw new ConflictException('Esa hora ya fue tomada');
       }
       throw e;
+    }
+  }
+
+  // Avisa por correo a los miembros con cuenta que tienen activados los avisos
+  // de reservas nuevas. Nunca lanza: un fallo aquí no debe romper la reserva
+  async notifyStaff(bookingId: string): Promise<void> {
+    try {
+      const booking = await this.prisma.booking.findUniqueOrThrow({
+        where: { id: bookingId },
+        select: {
+          startsAt: true,
+          notes: true,
+          businessId: true,
+          business: { select: { name: true, timezone: true } },
+          member: { select: { displayName: true } },
+          customer: { select: { name: true, email: true, phone: true } },
+          items: {
+            orderBy: { position: 'asc' },
+            select: { service: { select: { name: true } } },
+          },
+        },
+      });
+      const recipients = await this.prisma.member.findMany({
+        where: {
+          businessId: booking.businessId,
+          active: true,
+          notifyNewBookings: true,
+          userId: { not: null },
+        },
+        select: { user: { select: { email: true, name: true } } },
+      });
+
+      await Promise.all(
+        recipients.map(({ user }) =>
+          this.notifications.newBookingForStaff({
+            to: user!.email,
+            recipientName: user!.name,
+            businessName: booking.business.name,
+            customerName: booking.customer.name,
+            customerEmail: booking.customer.email,
+            customerPhone: booking.customer.phone,
+            serviceName: booking.items.map((i) => i.service.name).join(' + '),
+            memberName: booking.member.displayName,
+            notes: booking.notes,
+            startsAt: booking.startsAt,
+            timezone: booking.business.timezone,
+          }),
+        ),
+      );
+    } catch (e) {
+      this.logger.error('Error avisando la reserva nueva', e as Error);
     }
   }
 

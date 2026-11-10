@@ -20,6 +20,7 @@ const notifications = {
     sent.push(data.serviceName);
     return Promise.resolve();
   },
+  newBookingForStaff: () => Promise.resolve(),
 } as unknown as NotificationsService;
 const storage = { urlFor: () => null } as unknown as StorageService;
 const availability = new AvailabilityService(db, storage);

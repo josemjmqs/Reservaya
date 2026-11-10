@@ -13,6 +13,20 @@ export interface BookingEmailData {
   manageToken: string;
 }
 
+export interface NewBookingEmailData {
+  to: string;
+  recipientName: string;
+  businessName: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  serviceName: string;
+  memberName: string;
+  notes: string | null;
+  startsAt: Date;
+  timezone: string;
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -52,6 +66,48 @@ export class NotificationsService {
           <strong>${escapeHtml(data.businessName)}</strong> quedó confirmada para
           el <strong>${when}</strong>.</p>
           <p>Si necesitas verla o cancelarla: <a href="${link}">administrar mi reserva</a>.</p>
+        `,
+      });
+      if (error) this.logger.error(`Resend: ${error.message}`);
+    } catch (e) {
+      this.logger.error('Error enviando correo', e as Error);
+    }
+  }
+
+  // Aviso al dueño (o a quien tenga activada la opción en Ajustes). Nunca lanza
+  async newBookingForStaff(data: NewBookingEmailData): Promise<void> {
+    if (!this.resend) {
+      this.logger.warn('RESEND_API_KEY no configurada: correo omitido');
+      return;
+    }
+    const start = DateTime.fromJSDate(data.startsAt, {
+      zone: data.timezone,
+    }).setLocale('es');
+    const when = start.toFormat("cccc d 'de' LLLL 'a las' HH:mm");
+    const agenda = `${this.frontendUrl}/dashboard/agenda?date=${start.toISODate()}`;
+    const settings = `${this.frontendUrl}/dashboard/settings`;
+    const contact = [data.customerEmail, data.customerPhone]
+      .filter(Boolean)
+      .map((c) => escapeHtml(c!))
+      .join(' · ');
+
+    try {
+      const { error } = await this.resend.emails.send({
+        from: this.from,
+        to: data.to,
+        subject: `Nueva reserva: ${data.customerName}, ${start.toFormat("ccc d 'de' LLL, HH:mm")}`,
+        html: `
+          <p>Hola ${escapeHtml(data.recipientName)},</p>
+          <p>Tienes una reserva nueva en <strong>${escapeHtml(data.businessName)}</strong>:</p>
+          <ul>
+            <li><strong>${escapeHtml(data.serviceName)}</strong></li>
+            <li>${when}, con ${escapeHtml(data.memberName)}</li>
+            <li>${escapeHtml(data.customerName)} · ${contact}</li>
+            ${data.notes ? `<li>Nota: ${escapeHtml(data.notes)}</li>` : ''}
+          </ul>
+          <p><a href="${agenda}">Ver en la agenda</a></p>
+          <p style="color:#6b7280;font-size:12px">Recibes este correo porque tienes activados los avisos de reservas nuevas.
+          Puedes desactivarlos en <a href="${settings}">Ajustes</a>.</p>
         `,
       });
       if (error) this.logger.error(`Resend: ${error.message}`);
