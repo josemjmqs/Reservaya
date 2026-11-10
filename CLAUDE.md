@@ -16,7 +16,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 ## Comandos
 - Todo `npm`/`npx` se ejecuta DENTRO de `backend/` o `frontend/`; en la raíz solo `docker compose` y `git`
 - Backend: `npm run start:dev`, `npx nest build`, `npm test`, `npm run test:integration`
-- Frontend: `npm run dev` (puerto 3001), `npx tsc --noEmit`, `npm run build`
+- Frontend: `npm run dev` (puerto 3001), `npx tsc --noEmit`, `npm run lint`, `npm run build`
 - Base local: `docker compose up -d`; consola: `docker compose exec db psql -U reservaya -d reservaya`
 
 ## Reglas del proyecto
@@ -49,9 +49,10 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 ## Flujo de trabajo
 - Una rama por función (`feat/...`, `fix/...`, `docs/...`), PR, CI en verde (`backend`, `frontend`, `integration`) y merge
 - Tras mergear, borrar la rama y crear una nueva para el siguiente cambio
-- Antes de commitear: `npx nest build` (backend) y `npx tsc --noEmit` + `npm run build` (frontend)
+- Antes de commitear: `npx nest build` (backend) y `npx tsc --noEmit` + `npm run lint` + `npm run build` (frontend)
+- En efectos de React no llamar `setState` de forma síncrona: el efecto llama a una función que solo hace el fetch y guarda el resultado en el `.then` (regla de `eslint-config-next`)
 - Commits pequeños con prefijos `feat:`, `fix:`, `docs:`, `chore:`, `test:`
-- Tras cada cambio, anotar en `CODE_REVIEW.md` los archivos modificados en orden de lectura, agrupados por commit (hash + mensaje)
+- Tras cada cambio, anotar en `CODE_REVIEW.md` los archivos modificados en orden de lectura, agrupados por commit (hash + mensaje). Es una lista local (en `.gitignore`): el dueño lo lee de arriba hacia abajo y borra lo que ya revisó, así que las entradas nuevas van SIEMPRE al final y nunca se restauran las borradas
 
 ## Pendientes conocidos
 - Recordatorios por correo 24 h antes
