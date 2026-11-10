@@ -22,6 +22,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 **Cliente (sin cuenta)**
 - Elige servicio, profesional y día entre las horas realmente libres
 - Servicios agrupados por categoría (ej. Hombres, Mujeres): se muestran solo las categorías y al tocar una se despliegan sus servicios, con la duración que corresponde a cada uno
+- Al elegir un servicio ve su información adicional (qué incluye, qué traer, recomendaciones)
 - "Sin preferencia": el sistema asigna al azar un profesional que tenga la hora libre
 - Reserva con nombre, correo y teléfono, y recibe una confirmación por correo
 - Ve y cancela su reserva con un enlace privado, sin crear cuenta
@@ -29,7 +30,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 **Negocio**
 - Registro e inicio de sesión (sesión con cookie `httpOnly`)
 - Verificación del correo al registrarse: la página pública recibe reservas recién cuando el dueño confirma su correo
-- Gestión de servicios: categoría, tiempo de atención, duración total estimada, precio opcional, edición y activar/desactivar
+- Gestión de servicios: categoría, tiempo de atención, duración total estimada, precio opcional, información adicional (hasta 300 caracteres), edición y activar/desactivar
 - Equipo: profesionales con los servicios que realizan y su propio horario semanal
 - Agenda diaria con filtro por profesional, estados de la reserva (completada, no se presentó, cancelada) y actualización automática
 - Bloqueos de tiempo (vacaciones, feriados, trámites) por días completos o rangos de horas, para todo el negocio o un profesional; avisa si ya hay reservas en ese período
