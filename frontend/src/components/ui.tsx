@@ -60,6 +60,27 @@ export function Textarea({
   );
 }
 
+// Campo con etiqueta visible: el placeholder desaparece al escribir, la etiqueta no
+export function Field({
+  label,
+  hint,
+  className,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={cx('flex flex-col gap-1', className)}>
+      <span className="text-xs font-medium text-gray-700">{label}</span>
+      {children}
+      {hint && <span className="text-xs text-gray-500">{hint}</span>}
+    </label>
+  );
+}
+
 export function Card({
   className,
   ...props
