@@ -112,6 +112,20 @@ export class AvailabilityService {
       },
     });
     if (!business) throw new NotFoundException('Negocio no encontrado');
-    return business;
+    const acceptsBookings = await this.acceptsBookings({ slug });
+    return { ...business, acceptsBookings };
+  }
+
+  // Un negocio recibe reservas solo cuando su dueño verificó el correo:
+  // evita que una cuenta falsa use la plataforma para enviar correos a terceros
+  async acceptsBookings(business: { id: string } | { slug: string }) {
+    const verifiedOwners = await this.prisma.member.count({
+      where: {
+        business,
+        role: 'OWNER',
+        user: { emailVerifiedAt: { not: null } },
+      },
+    });
+    return verifiedOwners > 0;
   }
 }

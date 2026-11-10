@@ -14,6 +14,11 @@ const RESERVED_SLUGS = [
   'reserva',
   'api',
   'admin',
+  'forgot-password',
+  'reset-password',
+  'verify-email',
+  'privacidad',
+  'terminos',
 ];
 
 export class RegisterDto {

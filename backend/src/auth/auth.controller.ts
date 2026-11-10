@@ -14,7 +14,11 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Throttle } from '@nestjs/throttler';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyEmailDto,
+} from './dto/password-reset.dto';
 
 const COOKIE = {
   httpOnly: true,
@@ -75,6 +79,21 @@ export class AuthController {
   @HttpCode(200)
   reset(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto.token, dto.password);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('verify-email')
+  @HttpCode(200)
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.auth.verifyEmail(dto.token);
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @Post('resend-verification')
+  @HttpCode(200)
+  resendVerification(@Request() req: AuthenticatedRequest) {
+    return this.auth.resendVerification(req.user.userId);
   }
 }
 
