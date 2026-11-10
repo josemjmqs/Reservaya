@@ -6,7 +6,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Backend: NestJS 12 (CommonJS), TypeScript, Prisma 6.19 (NO usar Prisma 7), PostgreSQL 16
 - Frontend: Next.js (App Router, `src/`), TypeScript, Tailwind v4 (`@tailwindcss/postcss`)
 - Node 22. Tests: Jest en modo ESM (unitarios `*.spec.ts`, integración `*.int-spec.ts` contra PostgreSQL)
-- Infra: Vercel (frontend), Render (API), Neon (DB), Cloudflare (DNS, R2 para respaldos), Resend (correo)
+- Infra: Vercel (frontend), Render (API), Neon (DB), Cloudflare (DNS, R2 para respaldos y para fotos de servicios), Resend (correo)
 
 ## Estructura
 - `backend/`: API (auth, services, members, working-hours, availability, bookings, agenda, notifications)
@@ -30,6 +30,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Un negocio recibe reservas solo si su dueño tiene `emailVerifiedAt` (`AvailabilityService.acceptsBookings`)
 - Los tokens de un solo uso (reset de contraseña, verificación de correo) se guardan solo como hash SHA-256
 - Al crear una ruta nueva en el frontend, agregarla a `RESERVED_SLUGS` (`register.dto.ts`)
+- Fotos: se guarda solo `imageKey` (ruta en el bucket) y la API responde `imageUrl` armada con `R2_PUBLIC_URL` (`StorageService.urlFor`). El tipo se valida por los bytes (`detectImageType`), nunca por el nombre o el Content-Type. Sin variables `R2_*` la subida responde 503
 
 ## Tests
 - Jest corre en ESM porque NestJS 12 es solo ESM: configuración en `jest.config.ts`, `test/jest-int.json` y `tsconfig.spec.json`; los scripts usan `node --experimental-vm-modules`
