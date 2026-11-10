@@ -26,7 +26,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Todas las fechas se guardan en UTC y se convierten con luxon según la zona del negocio (`America/Santiago`)
 - Código y nombres en inglés; textos visibles al usuario en español
 - Sesión: JWT en cookie `httpOnly` (también se acepta header Bearer para pruebas)
-- Correos: nunca deben romper el flujo principal (el envío captura sus errores)
+- Correos: nunca deben romper el flujo principal (el envío captura sus errores) y se mandan sin `await` (`void`). Todos pasan por `NotificationsService.send`, que reintenta 3 veces ante fallas pasajeras (`isTransient`) con la misma clave de idempotencia de Resend
 - Al crear una reserva se avisa por correo a los miembros activos con cuenta y `notifyNewBookings` (`BookingsService.notifyStaff`, preferencia en `/settings`)
 - Los correos se normalizan a minúsculas (trim + lowercase)
 - Un negocio recibe reservas solo si su dueño tiene `emailVerifiedAt` (`AvailabilityService.acceptsBookings`)
