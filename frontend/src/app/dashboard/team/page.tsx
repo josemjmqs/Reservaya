@@ -6,6 +6,9 @@ import { api } from '@/lib/api';
 import { Button, Card, Input } from '@/components/ui';
 import type { Service, TeamMember } from '@/lib/types';
 
+const fetchTeam = () =>
+  Promise.all([api<TeamMember[]>('/members'), api<Service[]>('/services')]);
+
 export default function TeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -15,18 +18,20 @@ export default function TeamPage() {
   const [editServices, setEditServices] = useState<string[]>([]);
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
-    const [m, s] = await Promise.all([
-      api<TeamMember[]>('/members'),
-      api<Service[]>('/services'),
-    ]);
+  const apply = useCallback(([m, s]: [TeamMember[], Service[]]) => {
     setMembers(m);
     setServices(s.filter((x) => x.active));
   }, []);
 
+  const load = useCallback(async () => {
+    apply(await fetchTeam());
+  }, [apply]);
+
   useEffect(() => {
-    load().catch((e) => setError(e.message));
-  }, [load]);
+    fetchTeam()
+      .then(apply)
+      .catch((e) => setError(e.message));
+  }, [apply]);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();

@@ -27,3 +27,5 @@ Thumbs.db
 
 *.dump
 *.sql.gz
+# Lista local de código por revisar (no se versiona)
+CODE_REVIEW.md

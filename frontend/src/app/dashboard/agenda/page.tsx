@@ -33,6 +33,11 @@ function iso(d: Date) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+const fetchAgenda = (date: string, memberId: string) =>
+  api<AgendaBooking[]>(
+    `/agenda?from=${date}&to=${date}${memberId ? `&memberId=${memberId}` : ""}`,
+  );
+
 export default function AgendaPage() {
   const [date, setDate] = useState(iso(new Date()));
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
@@ -42,8 +47,7 @@ export default function AgendaPage() {
 
   const load = useCallback(async () => {
     try {
-      const q = `/agenda?from=${date}&to=${date}${memberId ? `&memberId=${memberId}` : ""}`;
-      setBookings(await api<AgendaBooking[]>(q));
+      setBookings(await fetchAgenda(date, memberId));
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error inesperado");
@@ -57,9 +61,21 @@ export default function AgendaPage() {
   }, []);
 
   useEffect(() => {
-    setError("");
-    load();
-  }, [load]);
+    // al cambiar de día, ignora la respuesta del día anterior si llega tarde
+    let stale = false;
+    fetchAgenda(date, memberId)
+      .then((list) => {
+        if (stale) return;
+        setBookings(list);
+        setError("");
+      })
+      .catch((e) => {
+        if (!stale) setError(e instanceof Error ? e.message : "Error inesperado");
+      });
+    return () => {
+      stale = true;
+    };
+  }, [date, memberId]);
 
   useEffect(() => {
     const refresh = () => {
