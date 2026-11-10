@@ -60,7 +60,7 @@ function ServiceFields({
           required
         />
       </Field>
-      <Field label="Duración total (min)" hint="Opcional, solo informativa">
+      <Field label="Duración total del servicio (min)" hint="Opcional, solo informativa">
         <Input
           type="number"
           min={5}
