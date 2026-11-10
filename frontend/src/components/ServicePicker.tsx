@@ -131,7 +131,9 @@ function ServiceButton({
             <img
               src={s.imageUrl}
               alt={s.name}
-              className="aspect-[4/3] w-full rounded-md object-cover"
+              // foto completa en su proporción; el alto máximo evita que una
+              // foto vertical ocupe toda la pantalla del celular
+              className="mx-auto h-auto max-h-[60vh] w-auto max-w-full rounded-md"
             />
           )}
           {s.description && (

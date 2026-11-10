@@ -26,7 +26,7 @@ export function PhotoPicker({
           <img
             src={imageUrl}
             alt="Foto del servicio"
-            className="h-20 w-28 shrink-0 rounded-lg border border-gray-200 object-cover"
+            className="h-20 w-28 shrink-0 rounded-lg border border-gray-200 bg-gray-50 object-contain"
           />
         ) : (
           <div className="flex h-20 w-28 shrink-0 items-center justify-center rounded-lg border border-dashed border-gray-300 text-xs text-gray-400">
