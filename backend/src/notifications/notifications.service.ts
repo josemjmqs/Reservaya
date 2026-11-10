@@ -1,7 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import { DateTime } from 'luxon';
 import { Resend } from 'resend';
+
+type EmailOptions = Parameters<Resend['emails']['send']>[0];
+interface SendError {
+  name: string;
+  message: string;
+  statusCode: number | null;
+}
+
+// Fallas pasajeras de Resend (saturación, error interno o sin conexión): vale la
+// pena reintentar. Las definitivas (clave inválida, dirección mal escrita, cuota
+// del día agotada) fallarían igual, así que no se reintentan
+const TRANSIENT = new Set([
+  'rate_limit_exceeded',
+  'application_error',
+  'internal_server_error',
+  'concurrent_idempotent_requests',
+]);
+export const isTransient = (e: SendError) =>
+  TRANSIENT.has(e.name) || (e.statusCode !== null && e.statusCode >= 500);
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface BookingEmailData {
   to: string;
@@ -33,6 +55,8 @@ export class NotificationsService {
   private readonly resend: Resend | null;
   private readonly from: string;
   private readonly frontendUrl: string;
+  // Espera antes de cada reintento: 3 intentos en total
+  private readonly retryDelaysMs = [2000, 5000];
 
   constructor(config: ConfigService) {
     const key = config.get<string>('RESEND_API_KEY');
@@ -44,42 +68,68 @@ export class NotificationsService {
       config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
   }
 
-  // Nunca lanza: un fallo de correo no debe romper la reserva
-  async bookingConfirmed(data: BookingEmailData): Promise<void> {
+  // Envía con reintentos ante fallas pasajeras. Nunca lanza: un correo que no
+  // sale queda en el log, pero no rompe la reserva ni el registro
+  private async send(label: string, email: EmailOptions): Promise<void> {
     if (!this.resend) {
-      this.logger.warn('RESEND_API_KEY no configurada: correo omitido');
+      this.logger.warn(
+        `RESEND_API_KEY no configurada: correo "${label}" omitido`,
+      );
       return;
     }
+    // La misma clave en todos los intentos: si un intento sí llegó a Resend
+    // aunque la respuesta se perdió, Resend no manda el correo dos veces
+    const idempotencyKey = randomUUID();
+
+    for (let attempt = 0; ; attempt++) {
+      let error: SendError | null;
+      try {
+        ({ error } = await this.resend.emails.send(email, { idempotencyKey }));
+      } catch (e) {
+        error = {
+          name: 'application_error',
+          message: (e as Error).message,
+          statusCode: null,
+        };
+      }
+      if (!error) return;
+
+      if (!isTransient(error) || attempt >= this.retryDelaysMs.length) {
+        this.logger.error(
+          `Correo "${label}" no enviado tras ${attempt + 1} intento(s): ${error.name}: ${error.message}`,
+        );
+        return;
+      }
+      this.logger.warn(
+        `Correo "${label}" falló (${error.name}); reintento en ${this.retryDelaysMs[attempt] / 1000} s`,
+      );
+      await sleep(this.retryDelaysMs[attempt]);
+    }
+  }
+
+  // Nunca lanza: un fallo de correo no debe romper la reserva
+  async bookingConfirmed(data: BookingEmailData): Promise<void> {
     const when = DateTime.fromJSDate(data.startsAt, { zone: data.timezone })
       .setLocale('es')
       .toFormat("cccc d 'de' LLLL 'a las' HH:mm");
     const link = `${this.frontendUrl}/reserva/${data.manageToken}`;
 
-    try {
-      const { error } = await this.resend.emails.send({
-        from: this.from,
-        to: data.to,
-        subject: `Reserva confirmada en ${data.businessName}`,
-        html: `
+    await this.send('confirmación de reserva', {
+      from: this.from,
+      to: data.to,
+      subject: `Reserva confirmada en ${data.businessName}`,
+      html: `
           <p>Hola ${escapeHtml(data.customerName)},</p>
           <p>Tu reserva de <strong>${escapeHtml(data.serviceName)}</strong> en
           <strong>${escapeHtml(data.businessName)}</strong> quedó confirmada para
           el <strong>${when}</strong>.</p>
           <p>Si necesitas verla o cancelarla: <a href="${link}">administrar mi reserva</a>.</p>
         `,
-      });
-      if (error) this.logger.error(`Resend: ${error.message}`);
-    } catch (e) {
-      this.logger.error('Error enviando correo', e as Error);
-    }
+    });
   }
 
   // Aviso al dueño (o a quien tenga activada la opción en Ajustes). Nunca lanza
   async newBookingForStaff(data: NewBookingEmailData): Promise<void> {
-    if (!this.resend) {
-      this.logger.warn('RESEND_API_KEY no configurada: correo omitido');
-      return;
-    }
     const start = DateTime.fromJSDate(data.startsAt, {
       zone: data.timezone,
     }).setLocale('es');
@@ -91,12 +141,11 @@ export class NotificationsService {
       .map((c) => escapeHtml(c!))
       .join(' · ');
 
-    try {
-      const { error } = await this.resend.emails.send({
-        from: this.from,
-        to: data.to,
-        subject: `Nueva reserva: ${data.customerName}, ${start.toFormat("ccc d 'de' LLL, HH:mm")}`,
-        html: `
+    await this.send('reserva nueva al negocio', {
+      from: this.from,
+      to: data.to,
+      subject: `Nueva reserva: ${data.customerName}, ${start.toFormat("ccc d 'de' LLL, HH:mm")}`,
+      html: `
           <p>Hola ${escapeHtml(data.recipientName)},</p>
           <p>Tienes una reserva nueva en <strong>${escapeHtml(data.businessName)}</strong>:</p>
           <ul>
@@ -109,11 +158,7 @@ export class NotificationsService {
           <p style="color:#6b7280;font-size:12px">Recibes este correo porque tienes activados los avisos de reservas nuevas.
           Puedes desactivarlos en <a href="${settings}">Ajustes</a>.</p>
         `,
-      });
-      if (error) this.logger.error(`Resend: ${error.message}`);
-    } catch (e) {
-      this.logger.error('Error enviando correo', e as Error);
-    }
+    });
   }
 
   async emailVerification(
@@ -121,43 +166,29 @@ export class NotificationsService {
     name: string,
     token: string,
   ): Promise<void> {
-    if (!this.resend) {
-      this.logger.warn('RESEND_API_KEY no configurada: correo omitido');
-      return;
-    }
     const link = `${this.frontendUrl}/verify-email?token=${token}`;
-    try {
-      const { error } = await this.resend.emails.send({
-        from: this.from,
-        to,
-        subject: 'Confirma tu correo en Reservahoy',
-        html: `<p>Hola ${escapeHtml(name)},</p>
+    await this.send('verificación de correo', {
+      from: this.from,
+      to,
+      subject: 'Confirma tu correo en Reservahoy',
+      html: `<p>Hola ${escapeHtml(name)},</p>
         <p>Confirma tu correo para que tu página pública empiece a recibir reservas (el enlace vale 24 horas):</p>
         <p><a href="${link}">Confirmar mi correo</a></p>
         <p>Si no creaste una cuenta en Reservahoy, ignora este mensaje.</p>`,
-      });
-      if (error) this.logger.error(`Resend: ${error.message}`);
-    } catch (e) {
-      this.logger.error('Error enviando correo', e as Error);
-    }
+    });
   }
 
   async passwordReset(to: string, name: string, token: string): Promise<void> {
-    if (!this.resend) return;
     const link = `${this.frontendUrl}/reset-password?token=${token}`;
-    try {
-      await this.resend.emails.send({
-        from: this.from,
-        to,
-        subject: 'Restablece tu contraseña',
-        html: `<p>Hola ${escapeHtml(name)},</p>
+    await this.send('restablecer contraseña', {
+      from: this.from,
+      to,
+      subject: 'Restablece tu contraseña',
+      html: `<p>Hola ${escapeHtml(name)},</p>
         <p>Para elegir una contraseña nueva usa este enlace (vale 1 hora):</p>
         <p><a href="${link}">Restablecer contraseña</a></p>
         <p>Si no lo pediste, ignora este mensaje.</p>`,
-      });
-    } catch (e) {
-      this.logger.error('Error enviando correo', e as Error);
-    }
+    });
   }
 }
 
