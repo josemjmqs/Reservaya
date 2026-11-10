@@ -48,6 +48,9 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 
 ## Flujo de trabajo
 - Una rama por función (`feat/...`, `fix/...`, `docs/...`), PR, CI en verde (`backend`, `frontend`, `integration`) y merge
+- Por ahora Claude mergea los PR apenas el CI está en verde (mergear a `main` despliega a producción). Cuando el proyecto tenga usuarios reales, el dueño pasará a mergear él mismo tras revisar
+- Los push y PR se hacen desde la sesión en la nube (el computador del dueño no expone credenciales de GitHub): `git bundle` en la carpeta local, push desde un clon en la nube y PR con `gh api` (REST; GraphQL no está disponible)
+- Para volver a `main` tras un merge usar `git switch -C main origin/main`, nunca `git checkout main` con un `main` local desactualizado
 - Tras mergear, borrar la rama y crear una nueva para el siguiente cambio
 - Antes de commitear: `npx nest build` (backend) y `npx tsc --noEmit` + `npm run lint` + `npm run build` (frontend)
 - En efectos de React no llamar `setState` de forma síncrona: el efecto llama a una función que solo hace el fetch y guarda el resultado en el `.then` (regla de `eslint-config-next`)
