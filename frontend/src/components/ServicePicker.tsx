@@ -123,7 +123,7 @@ function ServiceButton({
     <button
       type="button"
       onClick={() => onSelect(s.id)}
-      aria-expanded={s.description ? selected : undefined}
+      aria-expanded={s.description || s.imageUrl ? selected : undefined}
       className={`rounded-lg border p-3 text-left transition ${
         selected
           ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
@@ -135,9 +135,21 @@ function ServiceButton({
         {publicDuration(s.durationMin, s.totalMin)}
         {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
       </span>
-      {selected && s.description && (
-        <span className="mt-2 block whitespace-pre-line border-t border-indigo-100 pt-2 text-sm text-gray-700">
-          {s.description}
+      {selected && (s.imageUrl || s.description) && (
+        <span className="mt-2 flex flex-col gap-2 border-t border-indigo-100 pt-2">
+          {s.imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- la foto ya viene reducida; no usamos el optimizador de Vercel
+            <img
+              src={s.imageUrl}
+              alt={s.name}
+              className="aspect-[4/3] w-full rounded-md object-cover"
+            />
+          )}
+          {s.description && (
+            <span className="whitespace-pre-line text-sm text-gray-700">
+              {s.description}
+            </span>
+          )}
         </span>
       )}
     </button>
