@@ -7,8 +7,10 @@ import { formatTotal } from "@/lib/format";
 import { removeServiceImage, uploadServiceImage } from "@/lib/image";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { ServiceThumb } from "@/components/ServiceThumb";
+import { groupByCategory } from "@/lib/services";
 import type { Service } from "@/lib/types";
 
+const NO_CATEGORY = "Sin categoría";
 const DESCRIPTION_MAX = 300; // igual que SERVICE_DESCRIPTION_MAX en el backend
 
 const empty = {
@@ -234,6 +236,81 @@ export default function ServicesPage() {
     }
   }
 
+  const groups = groupByCategory(services, NO_CATEGORY);
+  // Sin ninguna categoría se muestra una sola lista, sin encabezados
+  const showGroupHeaders = groups.some(([name]) => name !== NO_CATEGORY);
+
+  const renderRow = (s: Service) =>
+    editingId === s.id ? (
+      <li key={s.id} className="flex flex-col gap-3 bg-gray-50 p-4">
+        <ServiceFields value={edit} onChange={setEdit} editing />
+        <PhotoPicker
+          imageUrl={s.imageUrl}
+          busy={photoBusyId === s.id}
+          onPick={(file) => changePhoto(s.id, file)}
+          onRemove={() => changePhoto(s.id, null)}
+        />
+        <div className="flex gap-2">
+          <Button className="px-3 py-1" onClick={() => saveEdit(s.id)}>
+            Guardar
+          </Button>
+          <Button
+            variant="secondary"
+            className="px-3 py-1"
+            onClick={() => setEditingId(null)}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </li>
+    ) : (
+      <li
+        key={s.id}
+        className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 p-4 sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:items-center"
+      >
+        <div className={s.active ? "" : "opacity-50"}>
+          <ServiceThumb src={s.imageUrl} />
+        </div>
+        <div className={s.active ? "" : "opacity-50"}>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="font-medium">{s.name}</p>
+            {!s.active && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                Desactivado
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-sm text-gray-600">
+            {s.durationMin} min de atención
+            {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
+            {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
+          </p>
+          {s.description && (
+            <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-gray-500">
+              {s.description}
+            </p>
+          )}
+        </div>
+        {/* En celular los botones bajan a su propia fila, alineados con el texto */}
+        <div className="col-start-2 flex gap-2 sm:col-start-3 sm:row-start-1">
+          <Button
+            variant="secondary"
+            className="px-3 py-1"
+            onClick={() => startEdit(s)}
+          >
+            Editar
+          </Button>
+          <Button
+            variant="secondary"
+            className="px-3 py-1"
+            onClick={() => toggle(s)}
+          >
+            {s.active ? "Desactivar" : "Activar"}
+          </Button>
+        </div>
+      </li>
+    );
+
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-tight">Servicios</h1>
@@ -261,89 +338,27 @@ export default function ServicesPage() {
 
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
-      <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
-        {services.map((s) =>
-          editingId === s.id ? (
-            <li key={s.id} className="flex flex-col gap-3 bg-gray-50 p-4">
-              <ServiceFields value={edit} onChange={setEdit} editing />
-              <PhotoPicker
-                imageUrl={s.imageUrl}
-                busy={photoBusyId === s.id}
-                onPick={(file) => changePhoto(s.id, file)}
-                onRemove={() => changePhoto(s.id, null)}
-              />
-              <div className="flex gap-2">
-                <Button className="px-3 py-1" onClick={() => saveEdit(s.id)}>
-                  Guardar
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="px-3 py-1"
-                  onClick={() => setEditingId(null)}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </li>
-          ) : (
-            <li
-              key={s.id}
-              className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 p-4 sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:items-center"
-            >
-              <div className={s.active ? "" : "opacity-50"}>
-                <ServiceThumb src={s.imageUrl} />
-              </div>
-              <div className={s.active ? "" : "opacity-50"}>
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <p className="font-medium">{s.name}</p>
-                  {s.category && (
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                      {s.category}
-                    </span>
-                  )}
-                  {!s.active && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                      Desactivado
-                    </span>
-                  )}
-                </div>
-                <p className="mt-0.5 text-sm text-gray-600">
-                  {s.durationMin} min de atención
-                  {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
-                  {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
-                </p>
-                {s.description && (
-                  <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-gray-500">
-                    {s.description}
-                  </p>
-                )}
-              </div>
-              {/* En celular los botones bajan a su propia fila, alineados con el texto */}
-              <div className="col-start-2 flex gap-2 sm:col-start-3 sm:row-start-1">
-                <Button
-                  variant="secondary"
-                  className="px-3 py-1"
-                  onClick={() => startEdit(s)}
-                >
-                  Editar
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="px-3 py-1"
-                  onClick={() => toggle(s)}
-                >
-                  {s.active ? "Desactivar" : "Activar"}
-                </Button>
-              </div>
-            </li>
-          ),
-        )}
-        {services.length === 0 && (
-          <li className="p-6 text-center text-sm text-gray-500">
-            Aún no tienes servicios.
-          </li>
-        )}
-      </ul>
+      {services.length === 0 ? (
+        <Card className="p-6 text-center text-sm text-gray-500">
+          Aún no tienes servicios.
+        </Card>
+      ) : (
+        groups.map(([name, items]) => (
+          <section key={name} className="mb-6">
+            {showGroupHeaders && (
+              <h2 className="mb-2 flex items-baseline gap-2 text-sm font-semibold text-gray-900">
+                {name}
+                <span className="text-xs font-normal text-gray-500">
+                  {items.length} {items.length === 1 ? "servicio" : "servicios"}
+                </span>
+              </h2>
+            )}
+            <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
+              {items.map(renderRow)}
+            </ul>
+          </section>
+        ))
+      )}
     </div>
   );
 }
