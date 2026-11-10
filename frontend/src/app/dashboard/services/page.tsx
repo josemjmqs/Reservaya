@@ -22,6 +22,8 @@ interface EditState {
   price: string;
 }
 
+const fetchServices = () => api<Service[]>("/services");
+
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
   const [form, setForm] = useState(empty);
@@ -30,12 +32,14 @@ export default function ServicesPage() {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    setServices(await api<Service[]>("/services"));
+    setServices(await fetchServices());
   }, []);
 
   useEffect(() => {
-    load().catch((e) => setError(e.message));
-  }, [load]);
+    fetchServices()
+      .then(setServices)
+      .catch((e) => setError(e.message));
+  }, []);
 
   const categories = useMemo(
     () => [

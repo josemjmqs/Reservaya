@@ -45,15 +45,14 @@ function HoursContent() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setError('');
-    setSaved(false);
-
     const url = memberId
       ? `/working-hours?memberId=${memberId}`
       : '/working-hours';
 
     api<WorkingHour[]>(url)
       .then((rows) => {
+        setError('');
+        setSaved(false);
         const next = emptyWeek();
         for (const r of rows) {
           next[r.weekday] = {

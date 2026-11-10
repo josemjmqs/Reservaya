@@ -32,6 +32,8 @@ export default function ManageBookingPage({
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // hora de carga de la página: la regla de pureza no permite Date.now() en el render
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     api<ManagedBooking>(`/public/bookings/${token}`)
@@ -80,7 +82,7 @@ export default function ManageBookingPage({
   });
   const canCancel =
     (booking.status === 'CONFIRMED' || booking.status === 'PENDING') &&
-    new Date(booking.startsAt).getTime() > Date.now();
+    new Date(booking.startsAt).getTime() > now;
 
   return (
     <main className="mx-auto max-w-md px-6 py-10">

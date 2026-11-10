@@ -37,36 +37,42 @@ export default function PublicPage({
       .catch(() => setNotFound(true));
   }, [slug]);
 
-  const loadSlots = useCallback(
-    async (signal?: AbortSignal): Promise<string | null> => {
-      if (!serviceId || !date) return null;
-      try {
-        const r = await api<{ slots: string[] }>(
-          `/public/${slug}/availability?serviceId=${serviceId}&date=${date}${
-            memberId ? `&memberId=${memberId}` : ""
-          }`,
-          { signal },
-        );
-        if (signal?.aborted) return null;
-        setSlots(r.slots);
-        setStartsAt("");
-        return null;
-      } catch (err) {
-        if (signal?.aborted) return null;
-        return err instanceof Error ? err.message : "Error inesperado";
-      }
-    },
+  const fetchSlots = useCallback(
+    (signal?: AbortSignal) =>
+      api<{ slots: string[] }>(
+        `/public/${slug}/availability?serviceId=${serviceId}&date=${date}${
+          memberId ? `&memberId=${memberId}` : ""
+        }`,
+        { signal },
+      ),
     [slug, serviceId, date, memberId],
   );
 
+  // Recarga las horas tras un error al reservar (ej. alguien tomó la hora)
+  async function reloadSlots() {
+    try {
+      setSlots((await fetchSlots()).slots);
+      setStartsAt("");
+    } catch {
+      // el error de la reserva es el que importa mostrar
+    }
+  }
+
   useEffect(() => {
+    if (!serviceId || !date) return;
     const controller = new AbortController();
-    setError("");
-    loadSlots(controller.signal).then((msg) => {
-      if (msg && !controller.signal.aborted) setError(msg);
-    });
+    fetchSlots(controller.signal)
+      .then((r) => {
+        setSlots(r.slots);
+        setStartsAt("");
+        setError("");
+      })
+      .catch((err) => {
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : "Error inesperado");
+      });
     return () => controller.abort();
-  }, [loadSlots]);
+  }, [fetchSlots, serviceId, date]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -87,7 +93,7 @@ export default function PublicPage({
       setDone(result);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error inesperado";
-      await loadSlots();
+      await reloadSlots();
       setError(message);
     } finally {
       setLoading(false);
