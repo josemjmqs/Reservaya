@@ -1,14 +1,37 @@
 import { PrismaClient } from '@prisma/client';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { StorageService } from '../storage/storage.service';
 import { ServicesService } from './services.service';
 
-// Servicio de Nest real contra PostgreSQL
+// Servicio de Nest real contra PostgreSQL; R2 se reemplaza por un registro en memoria
 const prisma = new PrismaClient();
-const service = new ServicesService(prisma as unknown as PrismaService);
+const bucket = new Map<string, string>(); // ruta -> content type
+const storage = {
+  enabled: true,
+  urlFor: (key: string | null) => (key ? `https://img.test/${key}` : null),
+  put: (key: string, _body: Buffer, contentType: string) => {
+    bucket.set(key, contentType);
+    return Promise.resolve();
+  },
+  remove: (key: string) => {
+    bucket.delete(key);
+    return Promise.resolve();
+  },
+} as unknown as StorageService;
+const service = new ServicesService(
+  prisma as unknown as PrismaService,
+  storage,
+);
+
+const JPG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]);
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]);
 const run = Date.now().toString(36);
 
 let businessId: string;
 let userId: string;
+let otherUserId: string;
+let otherBusinessId: string;
 
 beforeAll(async () => {
   businessId = (
@@ -18,19 +41,48 @@ beforeAll(async () => {
   ).id;
   userId = (
     await prisma.user.create({
-      data: { email: `services-${run}@test.local`, name: 'Dueña', password: 'x' },
+      data: {
+        email: `services-${run}@test.local`,
+        name: 'Dueña',
+        password: 'x',
+      },
     })
   ).id;
   await prisma.member.create({
     data: { role: 'OWNER', displayName: 'Dueña', userId, businessId },
   });
+  otherBusinessId = (
+    await prisma.business.create({
+      data: { name: 'Otro', slug: `int-services-other-${run}` },
+    })
+  ).id;
+  otherUserId = (
+    await prisma.user.create({
+      data: {
+        email: `services-other-${run}@test.local`,
+        name: 'Otro',
+        password: 'x',
+      },
+    })
+  ).id;
+  await prisma.member.create({
+    data: {
+      role: 'OWNER',
+      displayName: 'Otro',
+      userId: otherUserId,
+      businessId: otherBusinessId,
+    },
+  });
 });
 
 afterAll(async () => {
-  await prisma.service.deleteMany({ where: { businessId } }); // borra MemberService en cascada
-  await prisma.member.deleteMany({ where: { businessId } });
-  await prisma.user.delete({ where: { id: userId } });
-  await prisma.business.delete({ where: { id: businessId } });
+  const ids = [businessId, otherBusinessId];
+  await prisma.service.deleteMany({ where: { businessId: { in: ids } } }); // borra MemberService en cascada
+  await prisma.member.deleteMany({ where: { businessId: { in: ids } } });
+  await prisma.user.deleteMany({
+    where: { id: { in: [userId, otherUserId] } },
+  });
+  await prisma.business.deleteMany({ where: { id: { in: ids } } });
   await prisma.$disconnect();
 });
 
@@ -71,5 +123,63 @@ describe('descripción de servicios', () => {
     });
     const updated = await service.update(userId, s.id, { description: '' });
     expect(updated.description).toBeNull();
+  });
+});
+
+describe('foto de servicios', () => {
+  let serviceId: string;
+
+  beforeAll(async () => {
+    serviceId = (
+      await service.create(userId, { name: 'Con foto', durationMin: 30 })
+    ).id;
+  });
+
+  it('guarda la foto con el tipo detectado por su contenido y devuelve la URL pública', async () => {
+    const s = await service.setImage(userId, serviceId, { buffer: JPG });
+    expect(s.imageUrl).toMatch(
+      new RegExp(
+        `^https://img\\.test/services/${businessId}/${serviceId}/[0-9a-f]{16}\\.jpg$`,
+      ),
+    );
+    expect(s).not.toHaveProperty('imageKey');
+    expect([...bucket.values()]).toEqual(['image/jpeg']);
+  });
+
+  it('al reemplazarla borra la foto anterior del bucket', async () => {
+    const before = [...bucket.keys()];
+    const s = await service.setImage(userId, serviceId, { buffer: PNG });
+    expect(s.imageUrl).toMatch(/\.png$/);
+    expect(bucket.size).toBe(1);
+    expect(bucket.has(before[0])).toBe(false);
+  });
+
+  it('rechaza archivos que no son JPG, PNG ni WebP', async () => {
+    await expect(
+      service.setImage(userId, serviceId, { buffer: Buffer.from('<svg/>') }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.setImage(userId, serviceId)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('otro negocio no puede cambiar ni quitar la foto (404)', async () => {
+    await expect(
+      service.setImage(otherUserId, serviceId, { buffer: JPG }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.removeImage(otherUserId, serviceId),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('el panel recibe la URL y quitar la foto la borra del bucket', async () => {
+    const listed = (await service.findAll(userId)).find(
+      (s) => s.id === serviceId,
+    );
+    expect(listed?.imageUrl).toMatch(/^https:\/\/img\.test\//);
+
+    const s = await service.removeImage(userId, serviceId);
+    expect(s.imageUrl).toBeNull();
+    expect(bucket.size).toBe(0);
   });
 });
