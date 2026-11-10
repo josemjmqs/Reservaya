@@ -6,6 +6,7 @@ import { Button, Card, Field, Input, Textarea } from "@/components/ui";
 import { formatTotal } from "@/lib/format";
 import { removeServiceImage, uploadServiceImage } from "@/lib/image";
 import { PhotoPicker } from "@/components/PhotoPicker";
+import { ServiceThumb } from "@/components/ServiceThumb";
 import type { Service } from "@/lib/types";
 
 const DESCRIPTION_MAX = 300; // igual que SERVICE_DESCRIPTION_MAX en el backend
@@ -287,42 +288,38 @@ export default function ServicesPage() {
           ) : (
             <li
               key={s.id}
-              className="flex items-center justify-between gap-3 p-4"
+              className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-3 gap-y-3 p-4 sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] sm:items-center"
             >
-              <div
-                className={`flex items-start gap-3 ${s.active ? "" : "opacity-50"}`}
-              >
-                {s.imageUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element -- la foto ya viene reducida; no usamos el optimizador de Vercel
-                  <img
-                    src={s.imageUrl}
-                    alt=""
-                    className="h-12 w-12 shrink-0 rounded-md object-cover"
-                  />
-                )}
-                <div>
-                  <p className="font-medium">
-                    {s.name}
-                    {s.category && (
-                      <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-600">
-                        {s.category}
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {s.durationMin} min de atención
-                    {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
-                    {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
-                    {!s.active && " · Desactivado"}
-                  </p>
-                  {s.description && (
-                    <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-gray-500">
-                      {s.description}
-                    </p>
+              <div className={s.active ? "" : "opacity-50"}>
+                <ServiceThumb src={s.imageUrl} />
+              </div>
+              <div className={s.active ? "" : "opacity-50"}>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="font-medium">{s.name}</p>
+                  {s.category && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      {s.category}
+                    </span>
+                  )}
+                  {!s.active && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                      Desactivado
+                    </span>
                   )}
                 </div>
+                <p className="mt-0.5 text-sm text-gray-600">
+                  {s.durationMin} min de atención
+                  {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
+                  {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
+                </p>
+                {s.description && (
+                  <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-gray-500">
+                    {s.description}
+                  </p>
+                )}
               </div>
-              <div className="flex gap-2">
+              {/* En celular los botones bajan a su propia fila, alineados con el texto */}
+              <div className="col-start-2 flex gap-2 sm:col-start-3 sm:row-start-1">
                 <Button
                   variant="secondary"
                   className="px-3 py-1"
