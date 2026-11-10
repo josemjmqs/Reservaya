@@ -96,9 +96,13 @@ export default function ManageBookingPage({
       <Card className="mt-5 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-medium">{booking.service.name}</p>
+            <p className="font-medium">
+              {booking.services.map((s) => s.name).join(" + ")}
+            </p>
             <p className="text-sm text-gray-600">
-              {formatTotal(booking.service.durationMin)}
+              {formatTotal(
+                booking.services.reduce((sum, s) => sum + s.durationMin, 0),
+              )}
             </p>
           </div>
           <span
