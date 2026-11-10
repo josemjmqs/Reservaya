@@ -8,14 +8,20 @@ import {
   MaxLength,
 } from 'class-validator';
 
+export const SERVICE_DESCRIPTION_MAX = 300;
+
 export class CreateServiceDto {
   @IsString()
   @MinLength(2)
   name: string;
 
+  // Información adicional que el cliente ve al elegir el servicio
   @IsOptional()
   @IsString()
-  description?: string;
+  @MaxLength(SERVICE_DESCRIPTION_MAX, {
+    message: `La descripción puede tener hasta ${SERVICE_DESCRIPTION_MAX} caracteres`,
+  })
+  description?: string | null;
 
   @IsInt()
   @Min(5)

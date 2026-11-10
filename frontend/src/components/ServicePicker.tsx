@@ -123,6 +123,7 @@ function ServiceButton({
     <button
       type="button"
       onClick={() => onSelect(s.id)}
+      aria-expanded={s.description ? selected : undefined}
       className={`rounded-lg border p-3 text-left transition ${
         selected
           ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
@@ -134,6 +135,11 @@ function ServiceButton({
         {publicDuration(s.durationMin, s.totalMin)}
         {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
       </span>
+      {selected && s.description && (
+        <span className="mt-2 block whitespace-pre-line border-t border-indigo-100 pt-2 text-sm text-gray-700">
+          {s.description}
+        </span>
+      )}
     </button>
   );
 }

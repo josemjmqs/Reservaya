@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
-import { Button, Card, Input } from "@/components/ui";
+import { Button, Card, Input, Textarea } from "@/components/ui";
 import { formatTotal } from "@/lib/format";
 import type { Service } from "@/lib/types";
+
+const DESCRIPTION_MAX = 300; // igual que SERVICE_DESCRIPTION_MAX en el backend
 
 const empty = {
   name: "",
   category: "",
+  description: "",
   durationMin: 30,
   totalMin: "",
   price: "",
@@ -17,12 +20,36 @@ const empty = {
 interface EditState {
   name: string;
   category: string;
+  description: string;
   durationMin: number;
   totalMin: string;
   price: string;
 }
 
 const fetchServices = () => api<Service[]>("/services");
+
+function DescriptionField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="w-full">
+      <Textarea
+        placeholder="Información adicional (opcional): qué incluye, qué traer, recomendaciones..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        maxLength={DESCRIPTION_MAX}
+        rows={2}
+      />
+      <p className="mt-0.5 text-right text-xs text-gray-400">
+        {value.length}/{DESCRIPTION_MAX}
+      </p>
+    </div>
+  );
+}
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -60,6 +87,9 @@ export default function ServicesPage() {
           name: form.name,
           durationMin: Number(form.durationMin),
           ...(form.category.trim() !== "" && { category: form.category }),
+          ...(form.description.trim() !== "" && {
+            description: form.description,
+          }),
           ...(form.totalMin !== "" && { totalMin: Number(form.totalMin) }),
           ...(form.price !== "" && { price: Number(form.price) }),
         }),
@@ -77,6 +107,7 @@ export default function ServicesPage() {
     setEdit({
       name: s.name,
       category: s.category ?? "",
+      description: s.description ?? "",
       durationMin: s.durationMin,
       totalMin: s.totalMin === null ? "" : String(s.totalMin),
       price: s.price === null ? "" : String(s.price),
@@ -92,6 +123,7 @@ export default function ServicesPage() {
           name: edit.name,
           durationMin: Number(edit.durationMin),
           category: edit.category.trim() === "" ? null : edit.category,
+          description: edit.description,
           totalMin: edit.totalMin === "" ? null : Number(edit.totalMin),
           price: edit.price === "" ? null : Number(edit.price),
         }),
@@ -170,6 +202,10 @@ export default function ServicesPage() {
             onChange={(e) => setForm({ ...form, price: e.target.value })}
             className="w-32"
           />
+          <DescriptionField
+            value={form.description}
+            onChange={(description) => setForm({ ...form, description })}
+          />
           <Button>Agregar</Button>
         </form>
       </Card>
@@ -215,6 +251,10 @@ export default function ServicesPage() {
                 onChange={(e) => setEdit({ ...edit, price: e.target.value })}
                 className="w-40"
               />
+              <DescriptionField
+                value={edit.description}
+                onChange={(description) => setEdit({ ...edit, description })}
+              />
               <Button className="px-3 py-1" onClick={() => saveEdit(s.id)}>
                 Guardar
               </Button>
@@ -246,6 +286,11 @@ export default function ServicesPage() {
                   {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
                   {!s.active && " · Desactivado"}
                 </p>
+                {s.description && (
+                  <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-gray-500">
+                    {s.description}
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button
