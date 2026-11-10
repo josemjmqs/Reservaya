@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button, Card, Input } from "@/components/ui";
 import type { BookingResult, PublicBusiness } from "@/lib/types";
-import { publicDuration } from "@/lib/format";
+import { ServicePicker } from "@/components/ServicePicker";
 
 function todayISO() {
   const d = new Date();
@@ -106,7 +106,7 @@ export default function PublicPage({
 
   if (!business.acceptsBookings)
     return (
-      <main className="mx-auto max-w-md px-6 py-10">
+      <main className="mx-auto w-full max-w-md px-6 py-10">
         <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
         <p className="mt-2 text-gray-600">
           Este negocio todavía no recibe reservas online. Vuelve a intentarlo
@@ -126,22 +126,11 @@ export default function PublicPage({
     m.services.some((s) => s.serviceId === serviceId),
   );
 
-  const hasCategories = business.services.some((s) => s.category);
-  const groups = Object.entries(
-    business.services.reduce<Record<string, typeof business.services>>(
-      (acc, s) => {
-        (acc[s.category ?? "Otros"] ??= []).push(s);
-        return acc;
-      },
-      {},
-    ),
-  );
-
   if (done) {
     const link = `${window.location.origin}/reserva/${done.manageToken}`;
 
     return (
-      <main className="mx-auto max-w-md px-6 py-12">
+      <main className="mx-auto w-full max-w-md px-6 py-12">
         <Card className="p-6 text-center">
           <p className="text-3xl">✓</p>
           <h1 className="mt-2 text-xl font-semibold tracking-tight">
@@ -184,46 +173,19 @@ export default function PublicPage({
   }
 
   return (
-    <main className="mx-auto max-w-md px-6 py-10">
+    <main className="mx-auto w-full max-w-md px-6 py-10">
       <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
       <p className="mb-6 text-gray-600">Reserva tu hora online</p>
 
       <h2 className="mb-2 text-sm font-medium text-gray-700">Servicio</h2>
-      <div className="flex flex-col gap-2">
-        {groups.map(([name, items]) => (
-          <div key={name} className="flex flex-col gap-2">
-            {hasCategories && (
-              <h3 className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                {name}
-              </h3>
-            )}
-            {items.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => {
-                  setServiceId(s.id);
-                  setMemberId("");
-                }}
-                className={`rounded-lg border p-3 text-left transition ${
-                  serviceId === s.id
-                    ? "border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <span className="font-medium">{s.name}</span>
-                <span className="block text-sm text-gray-600">
-                  {publicDuration(s.durationMin, s.totalMin)}
-                  {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
-                </span>
-              </button>
-            ))}
-          </div>
-        ))}
-        {business.services.length === 0 && (
-          <p className="text-sm text-gray-600">Sin servicios disponibles.</p>
-        )}
-      </div>
+      <ServicePicker
+        services={business.services}
+        selectedId={serviceId}
+        onSelect={(id) => {
+          setServiceId(id);
+          setMemberId("");
+        }}
+      />
 
       {eligible.length > 1 && (
         <>
