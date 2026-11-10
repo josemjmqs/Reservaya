@@ -9,7 +9,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Infra: Vercel (frontend), Render (API), Neon (DB), Cloudflare (DNS, R2 para respaldos y para fotos de servicios), Resend (correo)
 
 ## Estructura
-- `backend/`: API (auth, services, members, working-hours, availability, bookings, agenda, notifications)
+- `backend/`: API (auth, services, members, working-hours, availability, bookings, agenda, notifications, settings)
 - `frontend/`: Next.js. El navegador llama a `/api/*` (rewrite hacia el backend con `API_URL`), así la cookie de sesión es first-party
 - `docker-compose.yml`: PostgreSQL local en el puerto 5433
 
@@ -27,6 +27,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Código y nombres en inglés; textos visibles al usuario en español
 - Sesión: JWT en cookie `httpOnly` (también se acepta header Bearer para pruebas)
 - Correos: nunca deben romper el flujo principal (el envío captura sus errores)
+- Al crear una reserva se avisa por correo a los miembros activos con cuenta y `notifyNewBookings` (`BookingsService.notifyStaff`, preferencia en `/settings`)
 - Los correos se normalizan a minúsculas (trim + lowercase)
 - Un negocio recibe reservas solo si su dueño tiene `emailVerifiedAt` (`AvailabilityService.acceptsBookings`)
 - Los tokens de un solo uso (reset de contraseña, verificación de correo) se guardan solo como hash SHA-256
