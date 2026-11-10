@@ -1,15 +1,29 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import type { Service } from '@prisma/client';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { detectImageType } from '../storage/image-type';
+import { StorageService } from '../storage/storage.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
+
+  // El cliente recibe la URL pública de la foto, no la ruta interna del bucket
+  private withImageUrl({ imageKey, ...service }: Service) {
+    return { ...service, imageUrl: this.storage.urlFor(imageKey) };
+  }
 
   // El negocio sale de la membresía del usuario autenticado, nunca del body
   private async getBusinessId(userId: string): Promise<string> {
@@ -40,10 +54,47 @@ export class ServicesService {
 
   async findAll(userId: string) {
     const businessId = await this.getBusinessId(userId);
-    return this.prisma.service.findMany({
+    const services = await this.prisma.service.findMany({
       where: { businessId },
       orderBy: { createdAt: 'asc' },
     });
+    return services.map((s) => this.withImageUrl(s));
+  }
+
+  async setImage(userId: string, id: string, file?: { buffer: Buffer }) {
+    if (!this.storage.enabled) {
+      throw new ServiceUnavailableException(
+        'La subida de fotos todavía no está disponible',
+      );
+    }
+    const businessId = await this.getBusinessId(userId);
+    const service = await this.findOwned(id, businessId);
+    if (!file) throw new BadRequestException('Falta la foto');
+    const type = detectImageType(file.buffer);
+    if (!type) {
+      throw new BadRequestException('La foto debe ser JPG, PNG o WebP');
+    }
+
+    // Ruta nueva en cada subida: así la caché nunca muestra la foto anterior
+    const key = `services/${businessId}/${id}/${randomBytes(8).toString('hex')}.${type.ext}`;
+    await this.storage.put(key, file.buffer, type.mime);
+    const updated = await this.prisma.service.update({
+      where: { id },
+      data: { imageKey: key },
+    });
+    if (service.imageKey) void this.storage.remove(service.imageKey);
+    return this.withImageUrl(updated);
+  }
+
+  async removeImage(userId: string, id: string) {
+    const businessId = await this.getBusinessId(userId);
+    const service = await this.findOwned(id, businessId);
+    const updated = await this.prisma.service.update({
+      where: { id },
+      data: { imageKey: null },
+    });
+    if (service.imageKey) void this.storage.remove(service.imageKey);
+    return this.withImageUrl(updated);
   }
 
   async update(userId: string, id: string, dto: UpdateServiceDto) {

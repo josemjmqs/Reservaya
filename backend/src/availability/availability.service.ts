@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { findMemberSlots } from './member-slots';
 
 @Injectable()
 export class AvailabilityService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async getSlots(
     slug: string,
@@ -98,6 +102,7 @@ export class AvailabilityService {
             durationMin: true,
             totalMin: true,
             price: true,
+            imageKey: true,
           },
         },
         members: {
@@ -113,7 +118,11 @@ export class AvailabilityService {
     });
     if (!business) throw new NotFoundException('Negocio no encontrado');
     const acceptsBookings = await this.acceptsBookings({ slug });
-    return { ...business, acceptsBookings };
+    const services = business.services.map(({ imageKey, ...s }) => ({
+      ...s,
+      imageUrl: this.storage.urlFor(imageKey),
+    }));
+    return { ...business, services, acceptsBookings };
   }
 
   // Un negocio recibe reservas solo cuando su dueño verificó el correo:
