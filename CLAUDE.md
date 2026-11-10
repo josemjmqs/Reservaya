@@ -42,6 +42,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - No editar migraciones ya aplicadas; crear nuevas con `npx prisma migrate dev --name ...`
 - Detener el servidor antes de `prisma generate`/`migrate` (EPERM en Windows)
 - Producción aplica migraciones con `prisma migrate deploy` al arrancar (Render)
+- `/health/live` no debe tocar la base: UptimeRobot lo visita cada 5 min para que Render gratis no duerma el backend
 
 ## Seguridad
 - NUNCA leer, mostrar ni commitear archivos `.env`, claves de Neon/R2/Resend, ni `age-key.txt`

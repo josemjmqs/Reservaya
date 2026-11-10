@@ -97,6 +97,7 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 ## Operación
 
 - **Infraestructura:** frontend en Vercel, API en Render, PostgreSQL en Neon, DNS en Cloudflare.
+- **Backend siempre despierto:** Render gratis apaga el servicio tras 15 minutos sin tráfico. Un monitor de UptimeRobot visita `/health/live` cada 5 minutos (no consulta la base, así Neon puede dormir) y avisa por correo si el backend cae.
 - **Dominio:** `reservahoy.cl` es el principal; `www.` y `app.` redirigen a él (308, conservando la ruta). `FRONTEND_URL` en Render debe ser `https://reservahoy.cl`, porque arma los enlaces de los correos.
 - **Respaldos:** diarios (06:17 UTC), cifrados con `age`, en Cloudflare R2, retención de 30 días. La clave privada se guarda fuera del repositorio y de GitHub.
 - **Restaurar un respaldo:**
