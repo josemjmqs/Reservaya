@@ -98,6 +98,17 @@ export default function PublicPage({
     return <p className="p-6 text-gray-600">Negocio no encontrado.</p>;
   if (!business) return <p className="p-6 text-gray-600">Cargando...</p>;
 
+  if (!business.acceptsBookings)
+    return (
+      <main className="mx-auto max-w-md px-6 py-10">
+        <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
+        <p className="mt-2 text-gray-600">
+          Este negocio todavía no recibe reservas online. Vuelve a intentarlo
+          pronto.
+        </p>
+      </main>
+    );
+
   const fmt = (iso: string) =>
     new Date(iso).toLocaleTimeString("es-CL", {
       hour: "2-digit",
