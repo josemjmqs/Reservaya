@@ -21,7 +21,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 
 **Cliente (sin cuenta)**
 - Elige servicio, profesional y día entre las horas realmente libres
-- Servicios agrupados por categoría (ej. Hombres, Mujeres) y con la duración que corresponde a cada uno
+- Servicios agrupados por categoría (ej. Hombres, Mujeres): se muestran solo las categorías y al tocar una se despliegan sus servicios, con la duración que corresponde a cada uno
 - "Sin preferencia": el sistema asigna al azar un profesional que tenga la hora libre
 - Reserva con nombre, correo y teléfono, y recibe una confirmación por correo
 - Ve y cancela su reserva con un enlace privado, sin crear cuenta
