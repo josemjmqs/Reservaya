@@ -39,7 +39,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 
 **Calidad y seguridad**
 - Sin dobles reservas, garantizado por una restricción de PostgreSQL y probado con peticiones concurrentes
-- Aislamiento entre negocios verificado
+- Aislamiento entre negocios verificado en todas las rutas del panel con pruebas de punta a punta (sin sesión: 401; con la sesión de otro negocio: 404)
 - Límites de peticiones por IP y de reservas por correo
 - Respaldos diarios cifrados
 
@@ -176,8 +176,19 @@ Entra en http://localhost:3001/login con `demo@reservahoy.local` / `demo1234`. L
 
 ```bash
 cd backend
-npm test
+npm test                  # unitarios
+npm run test:integration  # contra PostgreSQL (usa DATABASE_URL)
 ```
+
+**Pruebas de punta a punta (Playwright)**, en `frontend/e2e/`: levantan la app completa con los datos de prueba y revisan que ningún negocio pueda ver ni cambiar datos de otro en ninguna ruta de la API, y que un cliente pueda reservar desde la página pública y el dueño la vea en su agenda. Con la base local, el seed corrido y backend (`:3000`) y frontend (`:3001`) levantados:
+
+```bash
+cd frontend
+npx playwright install chromium   # solo la primera vez
+npm run e2e
+```
+
+El CI las corre en el job `e2e` en cada PR.
 
 ### Problemas comunes
 
