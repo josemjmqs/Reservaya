@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { Button, Card, Field, Input, Textarea } from "@/components/ui";
 import { formatTotal } from "@/lib/format";
+import { removeServiceImage, uploadServiceImage } from "@/lib/image";
+import { PhotoPicker } from "@/components/PhotoPicker";
 import type { Service } from "@/lib/types";
 
 const DESCRIPTION_MAX = 300; // igual que SERVICE_DESCRIPTION_MAX en el backend
@@ -98,6 +100,9 @@ export default function ServicesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [edit, setEdit] = useState<ServiceForm>(empty);
   const [error, setError] = useState("");
+  // foto elegida para el servicio nuevo; se sube después de crearlo
+  const [newPhoto, setNewPhoto] = useState<{ file: File; preview: string } | null>(null);
+  const [photoBusyId, setPhotoBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setServices(await fetchServices());
@@ -118,11 +123,22 @@ export default function ServicesPage() {
     [services],
   );
 
+  function pickNewPhoto(file: File) {
+    if (newPhoto) URL.revokeObjectURL(newPhoto.preview);
+    setNewPhoto({ file, preview: URL.createObjectURL(file) });
+  }
+
+  function clearNewPhoto() {
+    if (newPhoto) URL.revokeObjectURL(newPhoto.preview);
+    setNewPhoto(null);
+  }
+
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    let created: Service;
     try {
-      await api("/services", {
+      created = await api<Service>("/services", {
         method: "POST",
         body: JSON.stringify({
           name: form.name,
@@ -135,10 +151,34 @@ export default function ServicesPage() {
           ...(form.price !== "" && { price: Number(form.price) }),
         }),
       });
-      setForm(empty);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error inesperado");
+      return;
+    }
+    setForm(empty);
+    if (newPhoto) {
+      try {
+        await uploadServiceImage(created.id, newPhoto.file);
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : "Error inesperado";
+        setError(`El servicio se creó, pero la foto no se pudo subir: ${reason}`);
+      }
+      clearNewPhoto();
+    }
+    await load();
+  }
+
+  async function changePhoto(id: string, file: File | null) {
+    setError("");
+    setPhotoBusyId(id);
+    try {
+      if (file) await uploadServiceImage(id, file);
+      else await removeServiceImage(id);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado");
+    } finally {
+      setPhotoBusyId(null);
     }
   }
 
@@ -207,6 +247,11 @@ export default function ServicesPage() {
         <form onSubmit={create} className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-gray-900">Nuevo servicio</h2>
           <ServiceFields value={form} onChange={setForm} />
+          <PhotoPicker
+            imageUrl={newPhoto?.preview ?? null}
+            onPick={pickNewPhoto}
+            onRemove={clearNewPhoto}
+          />
           <div>
             <Button>Agregar</Button>
           </div>
@@ -220,6 +265,12 @@ export default function ServicesPage() {
           editingId === s.id ? (
             <li key={s.id} className="flex flex-col gap-3 bg-gray-50 p-4">
               <ServiceFields value={edit} onChange={setEdit} editing />
+              <PhotoPicker
+                imageUrl={s.imageUrl}
+                busy={photoBusyId === s.id}
+                onPick={(file) => changePhoto(s.id, file)}
+                onRemove={() => changePhoto(s.id, null)}
+              />
               <div className="flex gap-2">
                 <Button className="px-3 py-1" onClick={() => saveEdit(s.id)}>
                   Guardar
@@ -238,26 +289,38 @@ export default function ServicesPage() {
               key={s.id}
               className="flex items-center justify-between gap-3 p-4"
             >
-              <div className={s.active ? "" : "opacity-50"}>
-                <p className="font-medium">
-                  {s.name}
-                  {s.category && (
-                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-600">
-                      {s.category}
-                    </span>
-                  )}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {s.durationMin} min de atención
-                  {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
-                  {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
-                  {!s.active && " · Desactivado"}
-                </p>
-                {s.description && (
-                  <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-gray-500">
-                    {s.description}
-                  </p>
+              <div
+                className={`flex items-start gap-3 ${s.active ? "" : "opacity-50"}`}
+              >
+                {s.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- la foto ya viene reducida; no usamos el optimizador de Vercel
+                  <img
+                    src={s.imageUrl}
+                    alt=""
+                    className="h-12 w-12 shrink-0 rounded-md object-cover"
+                  />
                 )}
+                <div>
+                  <p className="font-medium">
+                    {s.name}
+                    {s.category && (
+                      <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-600">
+                        {s.category}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {s.durationMin} min de atención
+                    {s.totalMin && ` · total ${formatTotal(s.totalMin)}`}
+                    {s.price !== null && ` · $${s.price.toLocaleString("es-CL")}`}
+                    {!s.active && " · Desactivado"}
+                  </p>
+                  {s.description && (
+                    <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-gray-500">
+                      {s.description}
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button
