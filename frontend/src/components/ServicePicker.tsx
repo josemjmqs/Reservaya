@@ -2,21 +2,10 @@
 
 import { useState } from "react";
 import { publicDuration } from "@/lib/format";
+import { groupByCategory } from "@/lib/services";
 import type { PublicBusiness } from "@/lib/types";
 
 type PublicService = PublicBusiness["services"][number];
-
-const NO_CATEGORY = "Otros";
-
-// Agrupa por categoría respetando el orden en que llegan los servicios
-function groupByCategory(services: PublicService[]) {
-  const groups = new Map<string, PublicService[]>();
-  for (const s of services) {
-    const name = s.category ?? NO_CATEGORY;
-    groups.set(name, [...(groups.get(name) ?? []), s]);
-  }
-  return [...groups.entries()];
-}
 
 export function ServicePicker({
   services,
@@ -27,7 +16,7 @@ export function ServicePicker({
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
-  const groups = groupByCategory(services);
+  const groups = groupByCategory(services, "Otros");
   // Con una sola categoría (o ninguna) no tiene sentido pedir un clic extra
   const collapsible = groups.length > 1;
   const [open, setOpen] = useState<string | null>(null);
