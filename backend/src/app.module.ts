@@ -14,12 +14,14 @@ import { BookingsModule } from './bookings/bookings.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { MembersModule } from './members/members.module';
 import { TimeBlocksModule } from './time-blocks/time-blocks.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     PrismaModule,
+    StorageModule,
     AuthModule,
     ServicesModule,
     WorkingHoursModule,

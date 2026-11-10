@@ -6,6 +6,7 @@ import { AvailabilityService } from '../availability/availability.service';
 import { BookingsService } from '../bookings/bookings.service';
 import type { NotificationsService } from '../notifications/notifications.service';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { StorageService } from '../storage/storage.service';
 import { AuthService } from './auth.service';
 
 // AuthService real contra PostgreSQL; el correo se reemplaza por un registro en memoria
@@ -25,7 +26,8 @@ const auth = new AuthService(
   new JwtService({ secret: 'test-secret' }),
   notifications,
 );
-const availability = new AvailabilityService(db);
+const storage = { urlFor: () => null } as unknown as StorageService;
+const availability = new AvailabilityService(db, storage);
 const bookings = new BookingsService(db, availability, notifications);
 
 const run = Date.now().toString(36);

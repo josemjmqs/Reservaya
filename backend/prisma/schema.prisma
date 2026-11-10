@@ -79,6 +79,7 @@ model Service {
   bookings    Booking[]
   members     MemberService[]
   category    String?
+  imageKey    String? // ruta de la foto en el bucket; la URL pública se arma con R2_PUBLIC_URL
 
   @@index([businessId])
 }

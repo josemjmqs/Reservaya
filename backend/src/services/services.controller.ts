@@ -7,12 +7,18 @@ import {
   Patch,
   Post,
   Request,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+
+// El navegador reduce la foto antes de subirla (~150 KB); 2 MB deja margen
+const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
 
 interface AuthenticatedRequest {
   user: { userId: string; email: string };
@@ -40,6 +46,25 @@ export class ServicesController {
     @Body() dto: UpdateServiceDto,
   ) {
     return this.services.update(req.user.userId, id, dto);
+  }
+
+  @Post(':id/image')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      limits: { fileSize: IMAGE_MAX_BYTES, files: 1 },
+    }),
+  )
+  setImage(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @UploadedFile() file?: { buffer: Buffer },
+  ) {
+    return this.services.setImage(req.user.userId, id, file);
+  }
+
+  @Delete(':id/image')
+  removeImage(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.services.removeImage(req.user.userId, id);
   }
 
   @Delete(':id')

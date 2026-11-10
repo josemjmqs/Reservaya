@@ -22,7 +22,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 **Cliente (sin cuenta)**
 - Elige servicio, profesional y día entre las horas realmente libres
 - Servicios agrupados por categoría (ej. Hombres, Mujeres): se muestran solo las categorías y al tocar una se despliegan sus servicios, con la duración que corresponde a cada uno
-- Al elegir un servicio ve su información adicional (qué incluye, qué traer, recomendaciones)
+- Al elegir un servicio ve su foto y su información adicional (qué incluye, qué traer, recomendaciones)
 - "Sin preferencia": el sistema asigna al azar un profesional que tenga la hora libre
 - Reserva con nombre, correo y teléfono, y recibe una confirmación por correo
 - Ve y cancela su reserva con un enlace privado, sin crear cuenta
@@ -30,7 +30,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 **Negocio**
 - Registro e inicio de sesión (sesión con cookie `httpOnly`)
 - Verificación del correo al registrarse: la página pública recibe reservas recién cuando el dueño confirma su correo
-- Gestión de servicios: categoría, tiempo de atención, duración total estimada, precio opcional, información adicional (hasta 300 caracteres), edición y activar/desactivar
+- Gestión de servicios: categoría, tiempo de atención, duración total estimada, precio opcional, información adicional (hasta 300 caracteres), foto, edición y activar/desactivar
 - Equipo: profesionales con los servicios que realizan y su propio horario semanal
 - Agenda diaria con filtro por profesional, estados de la reserva (completada, no se presentó, cancelada) y actualización automática
 - Bloqueos de tiempo (vacaciones, feriados, trámites) por días completos o rangos de horas, para todo el negocio o un profesional; avisa si ya hay reservas en ese período
@@ -88,6 +88,8 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
 
 **Verificación de correo antes de recibir reservas.** Al registrarse se envía un enlace de un solo uso (vale 24 horas; en la base solo se guarda su hash SHA-256). El panel funciona desde el primer momento, pero la página pública no acepta reservas hasta que el dueño confirma su correo: así una cuenta creada con un correo ajeno no puede usar la plataforma para enviar correos a terceros. El reenvío está limitado a 3 por hora y las cuentas anteriores a esta función quedaron verificadas en la migración.
 
+**Fotos reducidas en el navegador y guardadas en R2.** Antes de subirla, el navegador lleva la foto a 1200 px y la convierte a WebP: una foto de celular de 3-5 MB queda en unos 150 KB, sube rápido incluso con datos móviles y no hace falta procesar imágenes en el servidor (Render gratis tiene poca memoria). El backend no confía en el nombre ni en el tipo que declara el navegador: identifica el formato por los primeros bytes del archivo y solo acepta JPG, PNG o WebP (un SVG podría llevar código). Las fotos van a un bucket público de Cloudflare R2, que no cobra por descargas; cada subida usa una ruta nueva, así que la caché puede guardarlas para siempre, y la foto reemplazada se borra del bucket.
+
 **Respaldos cifrados y verificados.** Un workflow diario de GitHub Actions hace `pg_dump`, cifra el archivo con `age` y lo sube a un bucket privado de Cloudflare R2 con retención de 30 días. La restauración se probó de punta a punta en una base limpia.
 
 ## Operación
@@ -99,6 +101,7 @@ Navegador ──► Next.js (Vercel) ──► API NestJS (Render) ──► Pos
   2. Descifrar: `age -d -i clave.txt -o respaldo.dump archivo.dump.age`
   3. Restaurar: `pg_restore --no-owner -d <base> respaldo.dump`
 - **Correo:** Resend, dominio `mail.` con DKIM verificado.
+- **Fotos:** bucket público de Cloudflare R2 con dominio propio; variables `R2_*` en Render (ver `backend/.env.example`). Sin ellas la subida de fotos queda desactivada.
 - **Despliegue:** automático al hacer merge a `main` (Render y Vercel).
 
 ## Correrlo en local

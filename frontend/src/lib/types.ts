@@ -7,6 +7,7 @@ export interface Service {
   price: number | null;
   active: boolean;
   category: string | null;
+  imageUrl: string | null;
 }
 
 export interface WorkingHour {
