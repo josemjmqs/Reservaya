@@ -51,6 +51,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Tras mergear, borrar la rama y crear una nueva para el siguiente cambio
 - Antes de commitear: `npx nest build` (backend) y `npx tsc --noEmit` + `npm run build` (frontend)
 - Commits pequeños con prefijos `feat:`, `fix:`, `docs:`, `chore:`, `test:`
+- Tras cada cambio, anotar en `CODE_REVIEW.md` los archivos modificados en orden de lectura, agrupados por commit (hash + mensaje)
 
 ## Pendientes conocidos
 - Recordatorios por correo 24 h antes
