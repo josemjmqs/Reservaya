@@ -38,12 +38,21 @@ const fetchAgenda = (date: string, memberId: string) =>
     `/agenda?from=${date}&to=${date}${memberId ? `&memberId=${memberId}` : ""}`,
   );
 
+const fetchNext = (memberId: string) =>
+  api<{ booking: AgendaBooking | null }>(
+    `/agenda/next${memberId ? `?memberId=${memberId}` : ""}`,
+  ).then((r) => r.booking);
+
 export default function AgendaPage() {
   const [date, setDate] = useState(iso(new Date()));
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [memberId, setMemberId] = useState(""); // "" = todos
   const [error, setError] = useState("");
+  const [next, setNext] = useState<AgendaBooking | null>(null);
+
+  // La próxima reserva solo se muestra si hoy no hay ninguna
+  const showNext = date === iso(new Date()) && bookings.length === 0;
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +85,21 @@ export default function AgendaPage() {
       stale = true;
     };
   }, [date, memberId]);
+
+  useEffect(() => {
+    if (!showNext) return;
+    let stale = false;
+    fetchNext(memberId)
+      .then((b) => {
+        if (!stale) setNext(b);
+      })
+      .catch(() => {
+        if (!stale) setNext(null);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [showNext, memberId, bookings]);
 
   useEffect(() => {
     const refresh = () => {
@@ -122,6 +146,17 @@ export default function AgendaPage() {
     day: "numeric",
     month: "long",
   });
+
+  const nextDay = (s: string) =>
+    new Date(s).toLocaleDateString("es-CL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone: TZ,
+    });
+
+  const nextDate = (s: string) =>
+    new Date(s).toLocaleDateString("en-CA", { timeZone: TZ }); // YYYY-MM-DD
 
   return (
     <div>
@@ -225,6 +260,29 @@ export default function AgendaPage() {
         {bookings.length === 0 && (
           <li className="p-6 text-center text-sm text-gray-500">
             Sin reservas este día.
+            {showNext && next && (
+              <button
+                type="button"
+                onClick={() => setDate(nextDate(next.startsAt))}
+                className="mx-auto mt-4 block w-full max-w-sm rounded-lg border border-gray-200 bg-gray-50 p-3 text-left hover:bg-gray-100"
+              >
+                <span className="block text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Próxima reserva
+                </span>
+                <span className="mt-1 block font-medium capitalize text-gray-900">
+                  {nextDay(next.startsAt)} · {time(next.startsAt)}
+                </span>
+                <span className="mt-0.5 block text-gray-600">
+                  {next.customer.name} ·{" "}
+                  {next.services.map((s) => s.name).join(" + ")}
+                </span>
+                {members.length > 1 && (
+                  <span className="mt-0.5 block text-xs text-gray-500">
+                    Con {next.member.displayName}
+                  </span>
+                )}
+              </button>
+            )}
           </li>
         )}
       </ul>
