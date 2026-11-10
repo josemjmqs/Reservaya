@@ -15,3 +15,9 @@ export class ListAgendaDto {
   @IsString()
   memberId?: string;
 }
+
+export class NextAgendaDto {
+  @IsOptional()
+  @IsString()
+  memberId?: string;
+}

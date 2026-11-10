@@ -8,6 +8,30 @@ import { Prisma } from '@prisma/client';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../prisma/prisma.service';
 
+const BOOKING_SELECT = {
+  id: true,
+  startsAt: true,
+  endsAt: true,
+  status: true,
+  notes: true,
+  items: {
+    orderBy: { position: 'asc' },
+    select: { service: { select: { name: true, durationMin: true } } },
+  },
+  customer: { select: { name: true, email: true, phone: true } },
+  member: { select: { id: true, displayName: true } },
+} satisfies Prisma.BookingSelect;
+
+type SelectedBooking = Prisma.BookingGetPayload<{
+  select: typeof BOOKING_SELECT;
+}>;
+
+// La API responde los servicios planos (en orden) en vez de los items
+const toAgendaBooking = ({ items, ...b }: SelectedBooking) => ({
+  ...b,
+  services: items.map((i) => i.service),
+});
+
 @Injectable()
 export class AgendaService {
   constructor(private readonly prisma: PrismaService) {}
@@ -22,17 +46,19 @@ export class AgendaService {
     return member.business;
   }
 
+  // Si se filtra por profesional, debe ser de tu negocio (404 si no)
+  private async assertMember(businessId: string, memberId?: string) {
+    if (!memberId) return;
+    const target = await this.prisma.member.findFirst({
+      where: { id: memberId, businessId },
+      select: { id: true },
+    });
+    if (!target) throw new NotFoundException('Profesional no encontrado');
+  }
+
   async list(userId: string, from: string, to: string, memberId?: string) {
     const business = await this.getBusiness(userId);
-
-    // Si se filtra por profesional, debe ser de tu negocio (404 si no)
-    if (memberId) {
-      const target = await this.prisma.member.findFirst({
-        where: { id: memberId, businessId: business.id },
-        select: { id: true },
-      });
-      if (!target) throw new NotFoundException('Profesional no encontrado');
-    }
+    await this.assertMember(business.id, memberId);
 
     const start = DateTime.fromISO(from, { zone: business.timezone }).startOf(
       'day',
@@ -46,24 +72,28 @@ export class AgendaService {
         startsAt: { gte: start.toJSDate(), lte: end.toJSDate() },
       },
       orderBy: { startsAt: 'asc' },
-      select: {
-        id: true,
-        startsAt: true,
-        endsAt: true,
-        status: true,
-        notes: true,
-        items: {
-          orderBy: { position: 'asc' },
-          select: { service: { select: { name: true, durationMin: true } } },
-        },
-        customer: { select: { name: true, email: true, phone: true } },
-        member: { select: { id: true, displayName: true } },
-      },
+      select: BOOKING_SELECT,
     });
-    return bookings.map(({ items, ...b }) => ({
-      ...b,
-      services: items.map((i) => i.service),
-    }));
+    return bookings.map(toAgendaBooking);
+  }
+
+  // Próxima reserva activa (pendiente o confirmada) que aún no empieza.
+  // Se envuelve en { booking } porque Nest responde un null como cuerpo vacío
+  async next(userId: string, memberId?: string, now = new Date()) {
+    const business = await this.getBusiness(userId);
+    await this.assertMember(business.id, memberId);
+
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        businessId: business.id,
+        ...(memberId && { memberId }),
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        startsAt: { gt: now },
+      },
+      orderBy: { startsAt: 'asc' },
+      select: BOOKING_SELECT,
+    });
+    return { booking: booking ? toAgendaBooking(booking) : null };
   }
 
   async updateStatus(userId: string, id: string, status: string) {

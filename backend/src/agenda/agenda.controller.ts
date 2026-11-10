@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AgendaService } from './agenda.service';
-import { ListAgendaDto } from './dto/list-agenda.dto';
+import { ListAgendaDto, NextAgendaDto } from './dto/list-agenda.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 
 interface AuthenticatedRequest {
@@ -25,6 +25,11 @@ export class AgendaController {
   @Get()
   list(@Request() req: AuthenticatedRequest, @Query() q: ListAgendaDto) {
     return this.agenda.list(req.user.userId, q.from, q.to, q.memberId);
+  }
+
+  @Get('next')
+  next(@Request() req: AuthenticatedRequest, @Query() q: NextAgendaDto) {
+    return this.agenda.next(req.user.userId, q.memberId);
   }
 
   @Patch(':id/status')
