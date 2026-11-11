@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { CancelBookingDialog } from "@/components/CancelBookingDialog";
 import { Button, Input } from "@/components/ui";
 import type {
   AgendaBooking,
@@ -57,6 +58,8 @@ function AgendaContent() {
   const [memberId, setMemberId] = useState(""); // "" = todos
   const [error, setError] = useState("");
   const [next, setNext] = useState<AgendaBooking | null>(null);
+  // Reserva que el dueño está por cancelar (abre la confirmación)
+  const [toCancel, setToCancel] = useState<AgendaBooking | null>(null);
 
   // La próxima reserva solo se muestra si hoy no hay ninguna
   const showNext = date === iso(new Date()) && bookings.length === 0;
@@ -128,12 +131,19 @@ function AgendaContent() {
     setDate(iso(d));
   }
 
-  async function setStatus(id: string, status: SettableStatus) {
+  async function setStatus(
+    id: string,
+    status: SettableStatus,
+    reason?: string,
+  ) {
     setError("");
     try {
       await api(`/agenda/${id}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          ...(reason?.trim() && { reason: reason.trim() }),
+        }),
       });
       await load();
     } catch (e) {
@@ -210,7 +220,7 @@ function AgendaContent() {
           <Button
             variant="danger"
             className="px-3 py-1"
-            onClick={() => setStatus(b.id, "CANCELLED")}
+            onClick={() => setToCancel(b)}
           >
             Cancelar
           </Button>
@@ -284,6 +294,21 @@ function AgendaContent() {
           </ul>
         </section>
       )}
+
+      <CancelBookingDialog
+        booking={toCancel}
+        when={
+          toCancel
+            ? `${nextDay(toCancel.startsAt)}, ${time(toCancel.startsAt)}`
+            : ""
+        }
+        onClose={() => setToCancel(null)}
+        onConfirm={async (reason) => {
+          if (!toCancel) return;
+          await setStatus(toCancel.id, "CANCELLED", reason);
+          setToCancel(null);
+        }}
+      />
     </div>
   );
 }
