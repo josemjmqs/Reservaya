@@ -34,6 +34,7 @@ TODO: agregar 3 capturas en `docs/` y enlazarlas aquí
 - Equipo: profesionales con los servicios que realizan y su propio horario semanal
 - Agenda diaria con filtro por profesional, estados de la reserva (completada, no se presentó, cancelada) y actualización automática; si hoy no hay reservas, muestra la próxima
 - Si el negocio cancela una reserva desde la agenda, confirma antes (con motivo opcional) y el cliente recibe un correo con el motivo y un enlace para reservar otra hora
+- Datos del negocio editables en Ajustes (nombre y teléfono); el teléfono se muestra en la página pública, en la reserva del cliente y en los correos
 - Correo al dueño por cada reserva nueva (servicio, hora, profesional y datos del cliente, con enlace a ese día de la agenda), activable y desactivable en Ajustes
 - Bloqueos de tiempo (vacaciones, feriados, trámites) por días completos o rangos de horas, para todo el negocio o un profesional; avisa si ya hay reservas en ese período
 - Página pública propia (`/tu-negocio`) lista para compartir
