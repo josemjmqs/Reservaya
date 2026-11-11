@@ -132,7 +132,13 @@ jobs:
       - name: Playwright
         working-directory: frontend
         run: |
-          npx playwright install --with-deps chromium
+          # La instalación descarga paquetes de Ubuntu; a veces la red del
+          # runner falla un momento, así que se reintenta antes de rendirse
+          for i in 1 2 3; do
+            npx playwright install --with-deps chromium && break
+            [ "$i" = 3 ] && exit 1
+            echo "Falló la instalación de Playwright; reintento en 15 s"; sleep 15
+          done
           npx playwright test
 
       - name: Informe si falla
