@@ -51,27 +51,39 @@ export default function RegisterPage() {
       <h1 className="text-2xl font-bold">Crea tu negocio</h1>
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         {fields.map(([field, placeholder, type]) => (
-          <input
-            key={field}
-            type={type}
-            placeholder={placeholder}
-            value={form[field]}
-            onChange={(e) =>
-              set(
-                field,
-                // The slug only accepts lowercase letters, digits and hyphens.
-                field === "slug"
-                  ? e.target.value.toLowerCase().replace(/\s/g, "-")
-                  : e.target.value,
-              )
-            }
-            // Mobile keyboards capitalize the first letter by default.
-            autoCapitalize={field === "slug" ? "none" : undefined}
-            autoCorrect={field === "slug" ? "off" : undefined}
-            spellCheck={field === "slug" ? false : undefined}
-            className="rounded border p-2"
-            required
-          />
+          <div key={field} className="flex flex-col gap-1">
+            <input
+              type={type}
+              placeholder={placeholder}
+              value={form[field]}
+              onChange={(e) =>
+                set(
+                  field,
+                  // The slug only accepts lowercase letters, digits and hyphens.
+                  field === "slug"
+                    ? e.target.value.toLowerCase().replace(/\s/g, "-")
+                    : e.target.value,
+                )
+              }
+              // Mobile keyboards capitalize the first letter by default.
+              autoCapitalize={field === "slug" ? "none" : undefined}
+              autoCorrect={field === "slug" ? "off" : undefined}
+              spellCheck={field === "slug" ? false : undefined}
+              aria-describedby={field === "slug" ? "slug-hint" : undefined}
+              className="rounded border p-2"
+              required
+            />
+            {field === "slug" && (
+              <p id="slug-hint" className="text-xs text-gray-500">
+                Es la dirección de tu página de reservas:
+                <span className="block break-all font-medium text-gray-700">
+                  reservahoy.cl/{form.slug || "tu-negocio"}
+                </span>
+                Compártela con tus clientes para que reserven. Solo minúsculas,
+                números y guiones.
+              </p>
+            )}
+          </div>
         ))}
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
