@@ -28,6 +28,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - Sesión: JWT en cookie `httpOnly` (también se acepta header Bearer para pruebas)
 - Correos: nunca deben romper el flujo principal (el envío captura sus errores) y se mandan sin `await` (`void`). Todos pasan por `NotificationsService.send`, que reintenta 3 veces ante fallas pasajeras (`isTransient`) con la misma clave de idempotencia de Resend
 - Al crear una reserva se avisa por correo a los miembros activos con cuenta y `notifyNewBookings` (`BookingsService.notifyStaff`, preferencia en `/settings`)
+- Si el negocio cancela (`PATCH /agenda/:id/status` a `CANCELLED`, motivo opcional `reason`), se avisa al cliente por correo una sola vez: solo quien pasa la reserva de activa a cancelada envía (`updateMany` condicional en `AgendaService.updateStatus`)
 - Los correos se normalizan a minúsculas (trim + lowercase)
 - Un negocio recibe reservas solo si su dueño tiene `emailVerifiedAt` (`AvailabilityService.acceptsBookings`)
 - Los tokens de un solo uso (reset de contraseña, verificación de correo) se guardan solo como hash SHA-256
