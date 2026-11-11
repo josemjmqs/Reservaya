@@ -43,7 +43,7 @@ export default function RegisterPage() {
     ["email", "Correo", "email"],
     ["password", "Contraseña (mínimo 8 caracteres)", "password"],
     ["businessName", "Nombre del negocio", "text"],
-    ["slug", "URL del negocio (ej: taller-perez)", "text"],
+    ["slug", "Link de tu negocio (ej: taller-perez)", "text"],
   ];
 
   return (
@@ -69,19 +69,24 @@ export default function RegisterPage() {
               autoCapitalize={field === "slug" ? "none" : undefined}
               autoCorrect={field === "slug" ? "off" : undefined}
               spellCheck={field === "slug" ? false : undefined}
-              aria-describedby={field === "slug" ? "slug-hint" : undefined}
+              aria-describedby={
+                field === "slug" ? "slug-hint slug-link" : undefined
+              }
               className="rounded border p-2"
               required
             />
             {field === "slug" && (
-              <p id="slug-hint" className="text-xs text-gray-500">
-                Es la dirección de tu página de reservas:
-                <span className="block break-all font-medium text-gray-700">
+              <>
+                <p id="slug-hint" className="text-xs text-gray-500">
+                  Así queda el link de tu negocio:
+                </p>
+                <p
+                  id="slug-link"
+                  className="break-all rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700"
+                >
                   reservahoy.cl/{form.slug || "tu-negocio"}
-                </span>
-                Compártela con tus clientes para que reserven. Solo minúsculas,
-                números y guiones.
-              </p>
+                </p>
+              </>
             )}
           </div>
         ))}

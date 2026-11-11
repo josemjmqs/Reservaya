@@ -14,7 +14,9 @@ test("un negocio nuevo se registra y queda esperando confirmar su correo", async
   await page.getByPlaceholder("Correo").fill(email);
   await page.getByPlaceholder("Contraseña").fill("password123");
   await page.getByPlaceholder("Nombre del negocio").fill(`Taller ${run}`);
-  await page.getByPlaceholder("URL del negocio").fill(slug);
+  await page.getByPlaceholder("Link de tu negocio").fill(slug);
+  // Ve cómo queda su link antes de crear la cuenta
+  await expect(page.getByText(`reservahoy.cl/${slug}`)).toBeVisible();
   await page.getByRole("button", { name: "Crear cuenta" }).click();
 
   // Entra a su panel, con el aviso para confirmar el correo
