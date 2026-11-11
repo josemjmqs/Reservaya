@@ -1,8 +1,100 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { Button, Field, Input } from "@/components/ui";
 import { api } from "@/lib/api";
-import type { Settings } from "@/lib/types";
+import type { BusinessInfo, Settings } from "@/lib/types";
+
+// Nombre y teléfono del negocio: los ven los clientes en la página pública,
+// en su reserva y en los correos
+function BusinessSection() {
+  const [form, setForm] = useState<{ name: string; phone: string } | null>(
+    null,
+  );
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api<BusinessInfo>("/business")
+      .then((b) => setForm({ name: b.name, phone: b.phone ?? "" }))
+      .catch((e) =>
+        setError(e instanceof Error ? e.message : "Error inesperado"),
+      );
+  }, []);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    if (!form) return;
+    setSaving(true);
+    setSaved(false);
+    setError("");
+    try {
+      const b = await api<BusinessInfo>("/business", {
+        method: "PATCH",
+        body: JSON.stringify({ name: form.name, phone: form.phone }),
+      });
+      setForm({ name: b.name, phone: b.phone ?? "" });
+      setSaved(true);
+      window.dispatchEvent(new Event("business-updated"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error inesperado");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <>
+      <h2 className="mb-2 mt-6 text-sm font-medium text-gray-900">
+        Datos del negocio
+      </h2>
+      <form
+        onSubmit={save}
+        className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+      >
+        {form ? (
+          <>
+            <Field label="Nombre del negocio">
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+                minLength={2}
+                maxLength={80}
+              />
+            </Field>
+            <Field
+              label="Teléfono"
+              hint="Lo ven tus clientes en tu página, en su reserva y en los correos. Déjalo vacío para no mostrarlo."
+            >
+              <Input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+56 9 1234 5678"
+                maxLength={20}
+              />
+            </Field>
+            <div className="flex items-center gap-3">
+              <Button type="submit" disabled={saving}>
+                {saving ? "Guardando..." : "Guardar"}
+              </Button>
+              {saved && (
+                <span role="status" className="text-sm text-green-700">
+                  Guardado.
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          !error && <p className="text-sm text-gray-500">Cargando...</p>
+        )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </form>
+    </>
+  );
+}
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -38,6 +130,8 @@ export default function SettingsPage() {
   return (
     <div>
       <h1 className="text-xl font-semibold tracking-tight">Ajustes</h1>
+
+      <BusinessSection />
 
       <h2 className="mb-2 mt-6 text-sm font-medium text-gray-900">
         Notificaciones

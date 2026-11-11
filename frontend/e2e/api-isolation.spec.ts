@@ -177,6 +177,20 @@ const PANEL_ROUTES: Record<
     call: (c, a) => c.delete(`/time-blocks/${a.block}`),
     other: 404,
   },
+  "GET /business": {
+    call: (c) => c.get("/business"),
+    other: async (res) => {
+      expect((await res.json()).name).not.toBe("Peluquería Demo");
+    },
+  },
+  "PATCH /business": {
+    // B cambia su propio negocio; al final se revisa que el de A siga igual
+    call: (c) =>
+      c.patch("/business", {
+        data: { name: "Negocio B editado", phone: "22 222 2222" },
+      }),
+    other: 200,
+  },
   "GET /settings": {
     call: (c) => c.get("/settings"),
     other: async (res) => {
@@ -307,6 +321,10 @@ test("los datos del negocio A siguen intactos", async () => {
   expect((await (await ownerA.get("/settings")).json()).newBookingEmail).toBe(
     true,
   );
+  expect(await (await ownerA.get("/business")).json()).toMatchObject({
+    name: "Peluquería Demo",
+    phone: "+56 9 1234 5678",
+  });
   const blocks = (await (await ownerA.get("/time-blocks")).json()).blocks;
   expect(blocks.map((b: { id: string }) => b.id)).toContain(a.block);
 });

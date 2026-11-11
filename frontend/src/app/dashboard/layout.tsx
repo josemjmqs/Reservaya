@@ -77,9 +77,14 @@ export default function DashboardLayout({
   const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
-    api<Me>("/auth/me")
-      .then(setMe)
-      .catch(() => router.replace("/login"));
+    const loadMe = () =>
+      api<Me>("/auth/me")
+        .then(setMe)
+        .catch(() => router.replace("/login"));
+    loadMe();
+    // Ajustes avisa cuando cambia el nombre del negocio, para el encabezado
+    window.addEventListener("business-updated", loadMe);
+    return () => window.removeEventListener("business-updated", loadMe);
   }, [router]);
 
   async function logout() {
