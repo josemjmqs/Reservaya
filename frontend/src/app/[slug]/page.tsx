@@ -205,6 +205,17 @@ export default function PublicPage({
   return (
     <main className="mx-auto w-full max-w-md px-6 py-10">
       <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
+      {business.phone && (
+        <p className="mt-1 text-sm text-gray-600">
+          Teléfono:{" "}
+          <a
+            href={`tel:${business.phone.replace(/[^\d+]/g, "")}`}
+            className="text-indigo-600 hover:underline"
+          >
+            {business.phone}
+          </a>
+        </p>
+      )}
       <p className="mb-6 text-gray-600">Reserva tu hora online</p>
 
       <div className="mb-2 flex items-baseline justify-between gap-3">

@@ -93,3 +93,9 @@ export interface Settings {
   newBookingEmail: boolean;
   email: string;
 }
+
+export interface BusinessInfo {
+  name: string;
+  slug: string;
+  phone: string | null;
+}

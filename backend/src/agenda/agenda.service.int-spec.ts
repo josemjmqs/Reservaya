@@ -1,12 +1,29 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
+import type {
+  CancelledByBusinessEmailData,
+  NotificationsService,
+} from '../notifications/notifications.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { AgendaService } from './agenda.service';
 
 // Servicio de Nest real contra PostgreSQL (posible porque Jest corre en ESM)
 const prisma = new PrismaClient();
-const service = new AgendaService(prisma as unknown as PrismaService);
+// Correos simulados: se anotan en vez de enviarse
+const cancelled: CancelledByBusinessEmailData[] = [];
+const notifications = {
+  bookingCancelledByBusiness: (data: CancelledByBusinessEmailData) => {
+    cancelled.push(data);
+    return Promise.resolve();
+  },
+} as unknown as NotificationsService;
+const service = new AgendaService(
+  prisma as unknown as PrismaService,
+  notifications,
+);
+// El correo sale en segundo plano: espera a que llegue (o a que pase el plazo)
+const settle = () => new Promise((r) => setTimeout(r, 300));
 const run = Date.now().toString(36);
 const tz = 'America/Santiago';
 
@@ -195,6 +212,71 @@ describe('AgendaService.updateStatus', () => {
       });
     },
   );
+
+  describe('correo al cliente cuando el negocio cancela', () => {
+    beforeEach(async () => {
+      await settle(); // correos que aún iban en camino de pruebas anteriores
+      cancelled.length = 0;
+    });
+
+    it('le avisa una vez, con la reserva y el motivo', async () => {
+      const id = await book('12:00');
+      await service.updateStatus(
+        ownerUserId,
+        id,
+        'CANCELLED',
+        '  Se nos cortó la luz  ',
+      );
+      await settle();
+      expect(cancelled).toHaveLength(1);
+      expect(cancelled[0]).toMatchObject({
+        to: `agenda-e-${run}@test.local`,
+        customerName: 'E',
+        serviceName: 'Color',
+        startsAt: local('2032-02-16', '12:00'),
+        timezone: 'America/Santiago',
+        reason: 'Se nos cortó la luz',
+      });
+      expect(cancelled[0].businessSlug).toMatch(/^int-agenda-a-/);
+    });
+
+    it('sin motivo, el correo sale sin motivo', async () => {
+      await service.updateStatus(ownerUserId, await book('13:00'), 'CANCELLED');
+      await settle();
+      expect(cancelled[0].reason).toBeNull();
+    });
+
+    it('cancelar dos veces al mismo tiempo manda un solo correo', async () => {
+      const id = await book('15:00');
+      await Promise.all([
+        service.updateStatus(ownerUserId, id, 'CANCELLED'),
+        service.updateStatus(ownerUserId, id, 'CANCELLED'),
+      ]);
+      await settle();
+      expect(cancelled).toHaveLength(1);
+    });
+
+    it.each(['COMPLETED', 'NO_SHOW'] as const)(
+      'marcar %s no le escribe al cliente',
+      async (status) => {
+        await service.updateStatus(
+          ownerUserId,
+          await book(status === 'COMPLETED' ? '16:00' : '16:30'),
+          status,
+        );
+        await settle();
+        expect(cancelled).toEqual([]);
+      },
+    );
+
+    it('cancelar una reserva ya completada no le escribe al cliente', async () => {
+      const id = await book('19:00');
+      await service.updateStatus(ownerUserId, id, 'COMPLETED');
+      await service.updateStatus(ownerUserId, id, 'CANCELLED');
+      await settle();
+      expect(cancelled).toEqual([]);
+    });
+  });
 
   it('reactivar una cancelada cuya hora ya tomó otra reserva responde 409', async () => {
     const cancelled = await book('14:00', 'CANCELLED');

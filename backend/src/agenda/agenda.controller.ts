@@ -38,6 +38,11 @@ export class AgendaController {
     @Param('id') id: string,
     @Body() dto: UpdateStatusDto,
   ) {
-    return this.agenda.updateStatus(req.user.userId, id, dto.status);
+    return this.agenda.updateStatus(
+      req.user.userId,
+      id,
+      dto.status,
+      dto.reason,
+    );
   }
 }

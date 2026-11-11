@@ -76,6 +76,7 @@ jobs:
   # flujo de reserva en el navegador (frontend/e2e)
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
@@ -132,7 +133,14 @@ jobs:
       - name: Playwright
         working-directory: frontend
         run: |
-          npx playwright install --with-deps chromium
+          # Solo el navegador (desde el CDN de Playwright), sin --with-deps: las
+          # librerías del sistema ya vienen en el runner (trae Chrome), y así no
+          # dependemos de los repositorios de Ubuntu, que a veces no responden
+          for i in 1 2 3; do
+            npx playwright install chromium && break
+            [ "$i" = 3 ] && exit 1
+            echo "Falló la descarga del navegador; reintento en 15 s"; sleep 15
+          done
           npx playwright test
 
       - name: Informe si falla
