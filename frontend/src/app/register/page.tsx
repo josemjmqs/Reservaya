@@ -56,7 +56,19 @@ export default function RegisterPage() {
             type={type}
             placeholder={placeholder}
             value={form[field]}
-            onChange={(e) => set(field, e.target.value)}
+            onChange={(e) =>
+              set(
+                field,
+                // The slug only accepts lowercase letters, digits and hyphens.
+                field === "slug"
+                  ? e.target.value.toLowerCase().replace(/\s/g, "-")
+                  : e.target.value,
+              )
+            }
+            // Mobile keyboards capitalize the first letter by default.
+            autoCapitalize={field === "slug" ? "none" : undefined}
+            autoCorrect={field === "slug" ? "off" : undefined}
+            spellCheck={field === "slug" ? false : undefined}
             className="rounded border p-2"
             required
           />
