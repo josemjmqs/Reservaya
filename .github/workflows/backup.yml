@@ -8,15 +8,29 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Install PostgreSQL 16 client and age
+      # No usa apt: si los servidores de Ubuntu no responden (pasó el 11-nov-2026),
+      # el respaldo igual corre. age viene de su release oficial en GitHub
+      # (versión fija y checksum verificado) y pg_dump 16 de la imagen oficial
+      # de PostgreSQL en Docker, la misma versión mayor que la base en Neon.
+      - name: Install age
+        env:
+          AGE_VERSION: v1.2.1
+          AGE_SHA256: 7df45a6cc87d4da11cc03a539a7470c15b1041ab2b396af088fe9990f7c79d50
         run: |
-          sudo apt-get update
-          sudo apt-get install -y curl ca-certificates gnupg lsb-release age
-          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client-16
+          set -euo pipefail
+          TARBALL="age-${AGE_VERSION}-linux-amd64.tar.gz"
+          curl -fsSL --retry 3 -o "$TARBALL" "https://github.com/FiloSottile/age/releases/download/${AGE_VERSION}/${TARBALL}"
+          echo "${AGE_SHA256}  ${TARBALL}" | sha256sum -c -
+          tar xzf "$TARBALL"
+          sudo install -m 0755 age/age /usr/local/bin/age
+          age --version
+
+      - name: Pull PostgreSQL 16 image
+        run: |
+          for i in 1 2 3; do docker pull -q postgres:16 && break; sleep 10; done
+          docker run --rm postgres:16 pg_dump --version
 
       - name: Dump and encrypt
         env:
@@ -25,7 +39,9 @@ jobs:
         run: |
           set -euo pipefail
           FILE="reservaya-$(date -u +%Y%m%d-%H%M).dump.age"
-          pg_dump "$DATABASE_URL" -Fc --no-owner --no-privileges | age -r "$AGE_PUBLIC_KEY" -o "$FILE"
+          docker run --rm -e DATABASE_URL postgres:16 \
+            sh -c 'pg_dump "$DATABASE_URL" -Fc --no-owner --no-privileges' \
+            | age -r "$AGE_PUBLIC_KEY" -o "$FILE"
           test -s "$FILE"
           echo "FILE=$FILE" >> "$GITHUB_ENV"
 
