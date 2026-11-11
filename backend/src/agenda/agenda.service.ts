@@ -2,10 +2,12 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { DateTime } from 'luxon';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const BOOKING_SELECT = {
@@ -34,7 +36,12 @@ const toAgendaBooking = ({ items, ...b }: SelectedBooking) => ({
 
 @Injectable()
 export class AgendaService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AgendaService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // El negocio sale de la membresía del usuario, nunca del cliente
   private async getBusiness(userId: string) {
@@ -96,12 +103,30 @@ export class AgendaService {
     return { booking: booking ? toAgendaBooking(booking) : null };
   }
 
-  async updateStatus(userId: string, id: string, status: string) {
+  async updateStatus(
+    userId: string,
+    id: string,
+    status: string,
+    reason?: string,
+  ) {
     const business = await this.getBusiness(userId);
     const booking = await this.prisma.booking.findFirst({
       where: { id, businessId: business.id },
     });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
+
+    if (status === 'CANCELLED') {
+      // Solo quien pasa la reserva de activa a cancelada avisa al cliente, así
+      // no le llegan dos correos si se cancela dos veces al mismo tiempo
+      const { count } = await this.prisma.booking.updateMany({
+        where: { id, status: { in: ['PENDING', 'CONFIRMED'] } },
+        data: { status: 'CANCELLED' },
+      });
+      if (count === 1) {
+        void this.notifyCancelled(id, reason?.trim() || null);
+        return { id, status: 'CANCELLED' as const };
+      }
+    }
 
     try {
       return await this.prisma.booking.update({
@@ -115,6 +140,40 @@ export class AgendaService {
         throw new ConflictException('Esa hora ya fue tomada por otra reserva');
       }
       throw e;
+    }
+  }
+
+  // Correo al cliente cuando el negocio cancela su reserva. Nunca lanza: un
+  // fallo aquí no debe deshacer ni romper la cancelación
+  private async notifyCancelled(id: string, reason: string | null) {
+    try {
+      const b = await this.prisma.booking.findUniqueOrThrow({
+        where: { id },
+        select: {
+          startsAt: true,
+          customer: { select: { name: true, email: true } },
+          business: {
+            select: { name: true, slug: true, phone: true, timezone: true },
+          },
+          items: {
+            orderBy: { position: 'asc' },
+            select: { service: { select: { name: true } } },
+          },
+        },
+      });
+      await this.notifications.bookingCancelledByBusiness({
+        to: b.customer.email,
+        customerName: b.customer.name,
+        businessName: b.business.name,
+        businessSlug: b.business.slug,
+        businessPhone: b.business.phone,
+        serviceName: b.items.map((i) => i.service.name).join(' + '),
+        startsAt: b.startsAt,
+        timezone: b.business.timezone,
+        reason,
+      });
+    } catch (e) {
+      this.logger.error('Error avisando la cancelación', e as Error);
     }
   }
 }

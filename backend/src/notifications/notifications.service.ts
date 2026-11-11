@@ -35,6 +35,18 @@ export interface BookingEmailData {
   manageToken: string;
 }
 
+export interface CancelledByBusinessEmailData {
+  to: string;
+  customerName: string;
+  businessName: string;
+  businessSlug: string;
+  businessPhone: string | null;
+  serviceName: string;
+  startsAt: Date;
+  timezone: string;
+  reason: string | null;
+}
+
 export interface NewBookingEmailData {
   to: string;
   recipientName: string;
@@ -124,6 +136,35 @@ export class NotificationsService {
           <strong>${escapeHtml(data.businessName)}</strong> quedó confirmada para
           el <strong>${when}</strong>.</p>
           <p>Si necesitas verla o cancelarla: <a href="${link}">administrar mi reserva</a>.</p>
+        `,
+    });
+  }
+
+  // El negocio canceló la reserva desde su agenda. Nunca lanza
+  async bookingCancelledByBusiness(
+    data: CancelledByBusinessEmailData,
+  ): Promise<void> {
+    const start = DateTime.fromJSDate(data.startsAt, {
+      zone: data.timezone,
+    }).setLocale('es');
+    const when = start.toFormat("cccc d 'de' LLLL 'a las' HH:mm");
+    const rebook = `${this.frontendUrl}/${data.businessSlug}`;
+
+    await this.send('cancelación por el negocio', {
+      from: this.from,
+      to: data.to,
+      subject: `Tu reserva en ${data.businessName} fue cancelada`,
+      html: `
+          <p>Hola ${escapeHtml(data.customerName)},</p>
+          <p><strong>${escapeHtml(data.businessName)}</strong> canceló tu reserva de
+          <strong>${escapeHtml(data.serviceName)}</strong> del <strong>${when}</strong>.</p>
+          ${data.reason ? `<p>Motivo: ${escapeHtml(data.reason)}</p>` : ''}
+          <p><a href="${rebook}">Reservar otra hora</a></p>
+          ${
+            data.businessPhone
+              ? `<p>Si tienes dudas, puedes llamar al ${escapeHtml(data.businessPhone)}.</p>`
+              : ''
+          }
         `,
     });
   }
