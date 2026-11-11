@@ -53,3 +53,23 @@ jobs:
         run: |
           aws s3 cp "$FILE" "s3://${{ secrets.R2_BUCKET }}/$FILE" \
             --endpoint-url "https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+
+      # Aviso a healthchecks.io: si un día no llega la señal (porque falló o
+      # porque GitHub apagó el workflow programado), healthchecks manda un correo
+      - name: Notify healthchecks (ok)
+        if: success()
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -n "$HEALTHCHECK_URL" ]; then
+            curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_URL"
+          fi
+
+      - name: Notify healthchecks (fail)
+        if: failure()
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -n "$HEALTHCHECK_URL" ]; then
+            curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_URL/fail"
+          fi
