@@ -58,7 +58,8 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 ## Flujo de trabajo
 - Una rama por función (`feat/...`, `fix/...`, `docs/...`), PR, CI en verde (`backend`, `frontend`, `integration`, `e2e`) y merge
 - Por ahora Claude mergea los PR apenas el CI está en verde (mergear a `main` despliega a producción). Cuando el proyecto tenga usuarios reales, el dueño pasará a mergear él mismo tras revisar
-- Los push y PR se hacen desde la sesión en la nube (el computador del dueño no expone credenciales de GitHub): `git bundle` en la carpeta local, push desde un clon en la nube y PR con `gh api` (REST; GraphQL no está disponible)
+- Push y PR desde la carpeta local con la sesión de GitHub CLI del dueño (`gh auth login` + `gh auth setup-git`): `git push -u origin <rama>`, `gh pr create`, `gh pr checks <n> --watch` y `gh pr merge <n> --merge --delete-branch`. Si `gh` no está en el PATH, usar `C:\Program Files\GitHub CLI\gh.exe`. Nunca pedir ni manejar tokens: si la sesión vence, el dueño corre `gh auth login`
+- `main` está protegida por un ruleset: solo se cambia por PR, exige `backend`, `frontend` e `integration` en verde y la rama al día con `main` (si quedó atrás: `gh pr update-branch <n>`). `e2e` no es obligatorio en el ruleset, pero igual se espera verde antes de mergear
 - Para volver a `main` tras un merge usar `git switch -C main origin/main`, nunca `git checkout main` con un `main` local desactualizado
 - Tras mergear, borrar la rama y crear una nueva para el siguiente cambio
 - Antes de commitear: `npx nest build` (backend) y `npx tsc --noEmit` + `npm run lint` + `npm run build` (frontend)
