@@ -61,8 +61,16 @@ function AgendaContent() {
   // Reserva que el dueño está por cancelar (abre la confirmación)
   const [toCancel, setToCancel] = useState<AgendaBooking | null>(null);
 
-  // La próxima reserva solo se muestra si hoy no hay ninguna
-  const showNext = date === iso(new Date()) && bookings.length === 0;
+  // Hoy, las reservas que ya terminaron bajan a "Ya pasaron"; las en curso
+  // siguen arriba. Otros días se muestran todas juntas, por hora
+  const now = new Date();
+  const isToday = date === iso(now);
+  const hasEnded = (b: AgendaBooking) => new Date(b.endsAt) <= now;
+  const upcoming = isToday ? bookings.filter((b) => !hasEnded(b)) : bookings;
+  const past = isToday ? bookings.filter(hasEnded) : [];
+
+  // La próxima reserva (de otro día) se muestra si hoy no queda ninguna por venir
+  const showNext = isToday && upcoming.length === 0;
 
   const load = useCallback(async () => {
     try {
@@ -273,10 +281,12 @@ function AgendaContent() {
       {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
 
       <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
-        {bookings.map(renderBooking)}
-        {bookings.length === 0 && (
+        {upcoming.map(renderBooking)}
+        {upcoming.length === 0 && (
           <li className="p-6 text-center text-sm text-gray-500">
-            Sin reservas este día.
+            {bookings.length === 0
+              ? "Sin reservas este día."
+              : "No quedan reservas por hoy."}
           </li>
         )}
       </ul>
@@ -291,6 +301,18 @@ function AgendaContent() {
           </p>
           <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
             {renderBooking(next)}
+          </ul>
+        </section>
+      )}
+
+      {/* Sin atenuar y con sus botones: aquí se marcan Completada / No se presentó */}
+      {past.length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-base font-semibold tracking-tight">
+            Ya pasaron
+          </h2>
+          <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white shadow-sm">
+            {past.map(renderBooking)}
           </ul>
         </section>
       )}
