@@ -74,19 +74,16 @@ export default function RegisterPage() {
                 autoCorrect={field === "slug" ? "off" : undefined}
                 spellCheck={field === "slug" ? false : undefined}
                 aria-describedby={
-                  field === "slug" ? "slug-rules slug-hint slug-link" : undefined
+                  field === "slug" ? "slug-rules slug-link" : undefined
                 }
                 required
               />
               {field === "slug" && (
                 <>
                   <p id="slug-rules" className="text-xs text-gray-500">
-                    Solo minúsculas, números y guiones.{" "}
-                    <span className="whitespace-nowrap">Ej: taller-perez</span>
+                    Solo minúsculas, números y guiones.
                   </p>
-                  <p id="slug-hint" className="text-xs text-gray-500">
-                    Así queda el link de tu negocio:
-                  </p>
+                  {/* The owner's link, live; a sample one while the field is empty */}
                   <p
                     id="slug-link"
                     className="break-all rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700"
