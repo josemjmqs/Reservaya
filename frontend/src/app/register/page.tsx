@@ -70,13 +70,16 @@ export default function RegisterPage() {
               autoCorrect={field === "slug" ? "off" : undefined}
               spellCheck={field === "slug" ? false : undefined}
               aria-describedby={
-                field === "slug" ? "slug-hint slug-link slug-rules" : undefined
+                field === "slug" ? "slug-rules slug-hint slug-link" : undefined
               }
               className="rounded border p-2"
               required
             />
             {field === "slug" && (
               <>
+                <p id="slug-rules" className="text-xs text-gray-500">
+                  Solo minúsculas, números y guiones.
+                </p>
                 <p id="slug-hint" className="text-xs text-gray-500">
                   Así queda el link de tu negocio:
                 </p>
@@ -85,9 +88,6 @@ export default function RegisterPage() {
                   className="break-all rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700"
                 >
                   reservahoy.cl/{form.slug || "tu-negocio"}
-                </p>
-                <p id="slug-rules" className="text-xs text-gray-500">
-                  Solo minúsculas, números y guiones.
                 </p>
               </>
             )}
