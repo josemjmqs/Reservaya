@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, ComponentProps } from 'react';
 import { twMerge } from 'tailwind-merge';
 
 // twMerge resuelve los choques: la clase que pasa quien usa el componente
@@ -31,7 +31,7 @@ export function Button({
 export function Input({
   className,
   ...props
-}: InputHTMLAttributes<HTMLInputElement>) {
+}: ComponentProps<'input'>) {
   return (
     <input
       {...props}

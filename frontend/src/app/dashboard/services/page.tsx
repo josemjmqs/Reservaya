@@ -6,6 +6,7 @@ import { Button, Card, Field, Input, Textarea } from "@/components/ui";
 import { formatTotal } from "@/lib/format";
 import { removeServiceImage, uploadServiceImage } from "@/lib/image";
 import { PhotoPicker } from "@/components/PhotoPicker";
+import { PriceInput } from "@/components/PriceInput";
 import { ServiceThumb } from "@/components/ServiceThumb";
 import { groupByCategory } from "@/lib/services";
 import type { Service } from "@/lib/types";
@@ -74,12 +75,7 @@ function ServiceFields({
         />
       </Field>
       <Field label="Precio (CLP)" hint="Opcional">
-        <Input
-          type="number"
-          min={0}
-          value={value.price}
-          onChange={(e) => set({ price: e.target.value })}
-        />
+        <PriceInput value={value.price} onChange={(price) => set({ price })} />
       </Field>
       <Field
         label="Información adicional"
