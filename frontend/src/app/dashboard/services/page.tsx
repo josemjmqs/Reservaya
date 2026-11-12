@@ -7,6 +7,7 @@ import { formatTotal } from "@/lib/format";
 import { removeServiceImage, uploadServiceImage } from "@/lib/image";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { PriceInput } from "@/components/PriceInput";
+import { CategoryInput } from "@/components/CategoryInput";
 import { ServiceThumb } from "@/components/ServiceThumb";
 import { groupByCategory } from "@/lib/services";
 import type { Service } from "@/lib/types";
@@ -31,10 +32,12 @@ const fetchServices = () => api<Service[]>("/services");
 function ServiceFields({
   value,
   onChange,
+  categories,
   editing = false,
 }: {
   value: ServiceForm;
   onChange: (value: ServiceForm) => void;
+  categories: string[];
   editing?: boolean;
 }) {
   const set = (patch: Partial<ServiceForm>) => onChange({ ...value, ...patch });
@@ -49,10 +52,10 @@ function ServiceFields({
         />
       </Field>
       <Field label="Categoría" hint={editing ? "Vacío = sin categoría" : undefined}>
-        <Input
-          list="categories"
+        <CategoryInput
           value={value.category}
-          onChange={(e) => set({ category: e.target.value })}
+          onChange={(category) => set({ category })}
+          options={categories}
           placeholder="Ej. Hombres"
         />
       </Field>
@@ -239,7 +242,7 @@ export default function ServicesPage() {
   const renderRow = (s: Service) =>
     editingId === s.id ? (
       <li key={s.id} className="flex flex-col gap-3 bg-gray-50 p-4">
-        <ServiceFields value={edit} onChange={setEdit} editing />
+        <ServiceFields value={edit} onChange={setEdit} categories={categories} editing />
         <PhotoPicker
           imageUrl={s.imageUrl}
           busy={photoBusyId === s.id}
@@ -311,16 +314,10 @@ export default function ServicesPage() {
     <div>
       <h1 className="text-xl font-semibold tracking-tight">Servicios</h1>
 
-      <datalist id="categories">
-        {categories.map((c) => (
-          <option key={c} value={c} />
-        ))}
-      </datalist>
-
       <Card className="my-4">
         <form onSubmit={create} className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-gray-900">Nuevo servicio</h2>
-          <ServiceFields value={form} onChange={setForm} />
+          <ServiceFields value={form} onChange={setForm} categories={categories} />
           <PhotoPicker
             imageUrl={newPhoto?.preview ?? null}
             onPick={pickNewPhoto}
