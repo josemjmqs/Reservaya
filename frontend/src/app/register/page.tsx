@@ -70,7 +70,7 @@ export default function RegisterPage() {
               autoCorrect={field === "slug" ? "off" : undefined}
               spellCheck={field === "slug" ? false : undefined}
               aria-describedby={
-                field === "slug" ? "slug-hint slug-link" : undefined
+                field === "slug" ? "slug-hint slug-link slug-rules" : undefined
               }
               className="rounded border p-2"
               required
@@ -85,6 +85,9 @@ export default function RegisterPage() {
                   className="break-all rounded-lg bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700"
                 >
                   reservahoy.cl/{form.slug || "tu-negocio"}
+                </p>
+                <p id="slug-rules" className="text-xs text-gray-500">
+                  Solo minúsculas, números y guiones.
                 </p>
               </>
             )}
