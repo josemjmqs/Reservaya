@@ -44,7 +44,7 @@ export default function RegisterPage() {
     ["email", "Correo", "email"],
     ["password", "Contraseña (mínimo 8 caracteres)", "password"],
     ["businessName", "Nombre del negocio", "text"],
-    ["slug", "Link de tu negocio (ej: taller-perez)", "text"],
+    ["slug", "Link de tu negocio", "text"],
   ];
 
   return (
@@ -81,7 +81,8 @@ export default function RegisterPage() {
               {field === "slug" && (
                 <>
                   <p id="slug-rules" className="text-xs text-gray-500">
-                    Solo minúsculas, números y guiones.
+                    Solo minúsculas, números y guiones.{" "}
+                    <span className="whitespace-nowrap">Ej: taller-perez</span>
                   </p>
                   <p id="slug-hint" className="text-xs text-gray-500">
                     Así queda el link de tu negocio:
