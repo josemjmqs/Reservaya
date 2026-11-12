@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
@@ -17,6 +17,33 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [slugInfoOpen, setSlugInfoOpen] = useState(false);
+  const slugInfoButtonRef = useRef<HTMLButtonElement>(null);
+  const slugInfoRef = useRef<HTMLParagraphElement>(null);
+
+  // The slug info popover closes with Escape or a tap anywhere but the button
+  // or the popover, including the field itself, so it never hides the live link.
+  useEffect(() => {
+    if (!slugInfoOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (
+        !slugInfoButtonRef.current?.contains(target) &&
+        !slugInfoRef.current?.contains(target)
+      ) {
+        setSlugInfoOpen(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setSlugInfoOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [slugInfoOpen]);
 
   function set(field: keyof typeof form, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -56,33 +83,72 @@ export default function RegisterPage() {
         <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
           {fields.map(([field, placeholder, type]) => (
             <div key={field} className="flex flex-col gap-1">
-              <Input
-                type={type}
-                placeholder={placeholder}
-                value={form[field]}
-                onChange={(e) =>
-                  set(
-                    field,
-                    // The slug only accepts lowercase letters, digits and hyphens.
-                    field === "slug"
-                      ? e.target.value.toLowerCase().replace(/\s/g, "-")
-                      : e.target.value,
-                  )
-                }
-                // Mobile keyboards capitalize the first letter by default.
-                autoCapitalize={field === "slug" ? "none" : undefined}
-                autoCorrect={field === "slug" ? "off" : undefined}
-                spellCheck={field === "slug" ? false : undefined}
-                aria-describedby={
-                  field === "slug" ? "slug-rules slug-link" : undefined
-                }
-                required
-              />
+              <div className="relative">
+                <Input
+                  type={type}
+                  placeholder={placeholder}
+                  value={form[field]}
+                  onChange={(e) =>
+                    set(
+                      field,
+                      // The slug only accepts lowercase letters, digits and hyphens.
+                      field === "slug"
+                        ? e.target.value.toLowerCase().replace(/\s/g, "-")
+                        : e.target.value,
+                    )
+                  }
+                  // Mobile keyboards capitalize the first letter by default.
+                  autoCapitalize={field === "slug" ? "none" : undefined}
+                  autoCorrect={field === "slug" ? "off" : undefined}
+                  spellCheck={field === "slug" ? false : undefined}
+                  aria-describedby={field === "slug" ? "slug-link" : undefined}
+                  // Room for the info button inside the field.
+                  className={field === "slug" ? "pr-10" : undefined}
+                  required
+                />
+                {field === "slug" && (
+                  <>
+                    <button
+                      ref={slugInfoButtonRef}
+                      type="button"
+                      onClick={() => setSlugInfoOpen((open) => !open)}
+                      aria-label="Información sobre el link"
+                      aria-expanded={slugInfoOpen}
+                      aria-controls="slug-info"
+                      className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-gray-400 hover:text-indigo-600 focus:text-indigo-600 focus:outline-none"
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    {slugInfoOpen && (
+                      <p
+                        ref={slugInfoRef}
+                        id="slug-info"
+                        role="note"
+                        className="absolute inset-x-0 top-full z-10 mt-1 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-600 shadow-md"
+                      >
+                        Crea el link de tu negocio, solo minúsculas, números y
+                        guiones. Ejemplo:{" "}
+                        <span className="whitespace-nowrap font-medium text-gray-800">
+                          reservahoy.cl/tu-negocio
+                        </span>
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
               {field === "slug" && (
                 <>
-                  <p id="slug-rules" className="text-xs text-gray-500">
-                    Solo minúsculas, números y guiones.
-                  </p>
                   {/* The owner's link, live; a sample one while the field is empty */}
                   <p
                     id="slug-link"
@@ -104,7 +170,10 @@ export default function RegisterPage() {
               términos
             </Link>{" "}
             y la{" "}
-            <Link href="/privacidad" className="text-indigo-600 hover:underline">
+            <Link
+              href="/privacidad"
+              className="text-indigo-600 hover:underline"
+            >
               política de privacidad
             </Link>
             .
