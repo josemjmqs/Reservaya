@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter,useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { Button, Card, Input } from "@/components/ui";
 
 function ResetNotice() {
   const reset = useSearchParams().get("reset");
   if (reset !== "1") return null;
   return (
-    <p className="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+    <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
       Contraseña actualizada, ya puedes entrar.
     </p>
   );
@@ -40,48 +41,47 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 p-6">
-      <h1 className="text-2xl font-bold">Iniciar sesión</h1>
-      <Suspense fallback={null}>
-        <ResetNotice />
-      </Suspense>
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <input
-          type="email"
-          placeholder="Correo"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded border p-2"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded border p-2"
-          required
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          disabled={loading}
-          className="rounded bg-black p-2 text-white disabled:opacity-50"
-        >
-          {loading ? "Entrando..." : "Entrar"}
-        </button>
-        <Link
-          href="/forgot-password"
-          className="text-sm text-indigo-600 hover:underline"
-        >
-          ¿Olvidaste tu contraseña?
-        </Link>
-      </form>
-      <p className="text-sm">
-        ¿No tienes cuenta?{" "}
-        <Link href="/register" className="underline">
-          Regístrate
-        </Link>
-      </p>
+    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6 py-10">
+      <Card className="p-6">
+        <h1 className="text-xl font-semibold tracking-tight">
+          Iniciar sesión
+        </h1>
+        <Suspense fallback={null}>
+          <ResetNotice />
+        </Suspense>
+        <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
+          <Input
+            type="email"
+            placeholder="Correo"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <Button disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
+          </Button>
+          <Link
+            href="/forgot-password"
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </form>
+        <p className="mt-4 text-sm text-gray-600">
+          ¿No tienes cuenta?{" "}
+          <Link href="/register" className="text-indigo-600 hover:underline">
+            Regístrate
+          </Link>
+        </p>
+      </Card>
     </main>
   );
 }
