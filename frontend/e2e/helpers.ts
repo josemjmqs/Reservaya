@@ -28,6 +28,35 @@ export const workdayFrom = (fromDays: number) =>
 export const sundayFrom = (fromDays: number) =>
   dayFrom(fromDays, (d) => weekday(d) === "Sun");
 
+// Instante de `date` (YYYY-MM-DD) a la hora `hhmm` en la zona del negocio, sin
+// depender de la zona del equipo que corre la prueba (para page.clock)
+export function zonedTime(date: string, hhmm: string): Date {
+  const [y, m, d] = date.split("-").map(Number);
+  const [h, min] = hhmm.split(":").map(Number);
+  const guess = Date.UTC(y, m - 1, d, h, min);
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: TZ,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+      .formatToParts(new Date(guess))
+      .map((p) => [p.type, Number(p.value)]),
+  );
+  const shownAsUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+  );
+  return new Date(guess - (shownAsUtc - guess));
+}
+
 // Sesión del dueño demo, guardada una sola vez por auth.setup.ts (el login tiene
 // un límite de 5 intentos por minuto y varias pruebas la necesitan)
 export const AUTH_FILE = "e2e/.auth/demo.json";
