@@ -14,6 +14,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import type { SessionUser } from './session';
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
 const VERIFY_MAX_PER_HOUR = 3;
@@ -78,7 +79,7 @@ export class AuthService {
 
     // sin await: el registro no espera al correo
     void this.notifications.emailVerification(user.email, user.name, verifyToken);
-    return this.signToken(user.id, user.email);
+    return this.signToken(user.id, user.email, user.sessionVersion);
   }
 
   async login(dto: LoginDto) {
@@ -89,7 +90,7 @@ export class AuthService {
     if (!user || !valid) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
-    return this.signToken(user.id, user.email);
+    return this.signToken(user.id, user.email, user.sessionVersion);
   }
 
   async me(userId: string) {
@@ -145,9 +146,10 @@ export class AuthService {
 
     const hashed = await bcrypt.hash(password, 10);
     await this.prisma.$transaction([
+      // subir la versión cierra las sesiones abiertas en otros dispositivos
       this.prisma.user.update({
         where: { id: record.userId },
-        data: { password: hashed },
+        data: { password: hashed, sessionVersion: { increment: 1 } },
       }),
       // invalida este y cualquier otro enlace pendiente del usuario
       this.prisma.passwordResetToken.updateMany({
@@ -213,8 +215,30 @@ export class AuthService {
     return { ok: true, alreadyVerified: false };
   }
 
-  private async signToken(userId: string, email: string) {
-    const accessToken = await this.jwt.signAsync({ sub: userId, email });
+  private async signToken(userId: string, email: string, sessionVersion: number) {
+    const accessToken = await this.jwt.signAsync({
+      sub: userId,
+      email,
+      sv: sessionVersion,
+    });
     return { accessToken };
+  }
+
+  // Lo llama JwtStrategy en cada petición con sesión: el token deja de valer si
+  // el usuario ya no existe o si cambió su contraseña después de emitirlo.
+  // Los tokens anteriores a sessionVersion no traen sv y cuentan como 0
+  async validateSession(payload: {
+    sub: string;
+    email: string;
+    sv?: number;
+    iat: number;
+  }): Promise<SessionUser | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { sessionVersion: true },
+    });
+    const sv = payload.sv ?? 0;
+    if (!user || user.sessionVersion !== sv) return null;
+    return { userId: payload.sub, email: payload.email, sv, iat: payload.iat };
   }
 }

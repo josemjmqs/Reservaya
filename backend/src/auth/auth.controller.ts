@@ -19,14 +19,7 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
 } from './dto/password-reset.dto';
-
-const COOKIE = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  maxAge: 24 * 60 * 60 * 1000,
-  path: '/',
-};
+import { SESSION_COOKIE as COOKIE } from './session';
 
 @Controller('auth')
 export class AuthController {

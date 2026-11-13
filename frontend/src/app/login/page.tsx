@@ -6,14 +6,28 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button, Card, Input } from "@/components/ui";
 
-function ResetNotice() {
-  const reset = useSearchParams().get("reset");
-  if (reset !== "1") return null;
-  return (
-    <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
-      Contraseña actualizada, ya puedes entrar.
-    </p>
-  );
+// ?reset=1 viene de restablecer la contraseña; ?expired=1, de una petición
+// del panel que respondió 401 (lib/api.ts)
+function LoginNotice() {
+  const params = useSearchParams();
+  if (params.get("reset") === "1") {
+    return (
+      <p className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+        Contraseña actualizada, ya puedes entrar.
+      </p>
+    );
+  }
+  if (params.get("expired") === "1") {
+    return (
+      <p
+        role="status"
+        className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800"
+      >
+        Tu sesión expiró. Vuelve a iniciar sesión.
+      </p>
+    );
+  }
+  return null;
 }
 
 export default function LoginPage() {
@@ -47,7 +61,7 @@ export default function LoginPage() {
           Iniciar sesión
         </h1>
         <Suspense fallback={null}>
-          <ResetNotice />
+          <LoginNotice />
         </Suspense>
         <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-3">
           <Input

@@ -215,3 +215,60 @@ describe('restablecer contraseña', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+describe('sesiones', () => {
+  type Payload = { sub: string; email: string; sv?: number; iat: number };
+  const loginWith = async (password: string) => {
+    const { accessToken } = await auth.login({ email, password });
+    return jwt.verify<Payload>(accessToken);
+  };
+  const versionOf = async (id: string) =>
+    (await prisma.user.findUniqueOrThrow({ where: { id } })).sessionVersion;
+
+  it('el token del login trae la versión de sesión del usuario', async () => {
+    await auth.resetPassword(await requestReset(), 'clave-sesiones-1');
+    const payload = await loginWith('clave-sesiones-1');
+    expect(payload.sv).toBe(await versionOf(userId));
+    expect(await auth.validateSession(payload)).toMatchObject({
+      userId,
+      email,
+      sv: payload.sv,
+    });
+  });
+
+  it('cambiar la contraseña con el enlace deja fuera las sesiones abiertas', async () => {
+    const before = await loginWith('clave-sesiones-1');
+    const version = await versionOf(userId);
+
+    await auth.resetPassword(await requestReset(), 'clave-sesiones-2');
+
+    expect(await versionOf(userId)).toBe(version + 1);
+    expect(await auth.validateSession(before)).toBeNull();
+    // la sesión nueva, con la contraseña nueva, sí vale
+    const after = await loginWith('clave-sesiones-2');
+    expect(await auth.validateSession(after)).not.toBeNull();
+  });
+
+  it('un token sin versión (anterior a este cambio) vale mientras la versión sea 0', async () => {
+    const user = await prisma.user.create({
+      data: { email: `old-token-${run}@test.local`, name: 'Antiguo', password: 'x' },
+    });
+    try {
+      const old = { sub: user.id, email: user.email, iat: 0 };
+      expect(await auth.validateSession(old)).toMatchObject({ sv: 0 });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { sessionVersion: 1 },
+      });
+      expect(await auth.validateSession(old)).toBeNull();
+    } finally {
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  });
+
+  it('el token de un usuario que ya no existe no vale', async () => {
+    expect(
+      await auth.validateSession({ sub: 'no-existe', email, sv: 0, iat: 0 }),
+    ).toBeNull();
+  });
+});

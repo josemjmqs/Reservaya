@@ -32,6 +32,8 @@ model User {
   name            String
   password        String
   emailVerifiedAt DateTime?
+  // Va en el JWT (sv); al cambiar la contraseña sube y cierra las otras sesiones
+  sessionVersion  Int                      @default(0)
   createdAt       DateTime                 @default(now())
   members         Member[]
   resetTokens     PasswordResetToken[]
