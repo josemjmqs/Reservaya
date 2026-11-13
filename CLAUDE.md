@@ -25,7 +25,7 @@ Plataforma de reservas online para pequeños negocios. Cada negocio tiene una p�
 - La restricción `booking_no_overlap` (exclusion constraint de PostgreSQL) es la garantía final contra dobles reservas; solape y deadlock se traducen a 409
 - Todas las fechas se guardan en UTC y se convierten con luxon según la zona del negocio (`America/Santiago`)
 - Código y nombres en inglés; textos visibles al usuario en español
-- Sesión: JWT en cookie `httpOnly` (también se acepta header Bearer para pruebas)
+- Sesión: JWT en cookie `httpOnly` (también se acepta header Bearer para pruebas) que dura 30 días y se renueva con el uso, como mucho una vez al día (`renewSession` en `auth/session.ts`, desde `JwtAuthGuard`). El token lleva `sv` (`User.sessionVersion`): restablecer la contraseña la incrementa y cierra las demás sesiones (`AuthService.validateSession`). En el panel, un 401 lleva a `/login?expired=1` (`lib/api.ts`)
 - Correos: nunca deben romper el flujo principal (el envío captura sus errores) y se mandan sin `await` (`void`). Todos pasan por `NotificationsService.send`, que reintenta 3 veces ante fallas pasajeras (`isTransient`) con la misma clave de idempotencia de Resend
 - Al crear una reserva se avisa por correo a los miembros activos con cuenta y `notifyNewBookings` (`BookingsService.notifyStaff`, preferencia en `/settings`)
 - Si el negocio cancela (`PATCH /agenda/:id/status` a `CANCELLED`, motivo opcional `reason`), se avisa al cliente por correo una sola vez: solo quien pasa la reserva de activa a cancelada envía (`updateMany` condicional en `AgendaService.updateStatus`)
