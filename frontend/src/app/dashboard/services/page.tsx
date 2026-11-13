@@ -74,7 +74,7 @@ function ServiceFields({
           value={value.category}
           onChange={(category) => set({ category })}
           options={categories}
-          placeholder="Ej. Hombres"
+          placeholder="Ej. Uñas"
           maxLength={CATEGORY_MAX}
         />
       </Field>
@@ -90,7 +90,7 @@ function ServiceFields({
       </Field>
       <Field
         label="Duración total del servicio"
-        hint="Opcional, solo informativa. Incluye el tiempo de atención"
+        hint="Opcional, solo necesario si el servicio tiene una duración mayor al tiempo de atención"
       >
         <DurationInput
           value={value.totalMin}
@@ -105,7 +105,7 @@ function ServiceFields({
       </Field>
       <Field
         label="Información adicional"
-        hint={`Opcional: qué incluye, qué traer, recomendaciones · ${value.description.length}/${DESCRIPTION_MAX}`}
+        hint={`Opcional. Indica en qué consiste el servicio · ${value.description.length}/${DESCRIPTION_MAX}`}
         className="sm:col-span-3"
       >
         <Textarea
