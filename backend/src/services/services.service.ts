@@ -36,6 +36,7 @@ export class ServicesService {
   }
 
   async create(userId: string, dto: CreateServiceDto) {
+    assertTotalCoversDuration(dto.durationMin, dto.totalMin);
     const businessId = await this.getBusinessId(userId);
     const owners = await this.prisma.member.findMany({
       where: { businessId, role: 'OWNER' },
@@ -99,7 +100,15 @@ export class ServicesService {
 
   async update(userId: string, id: string, dto: UpdateServiceDto) {
     const businessId = await this.getBusinessId(userId);
-    await this.findOwned(id, businessId);
+    const current = await this.findOwned(id, businessId);
+    // Solo si se cambia alguno de los dos (activar un servicio no lo revisa);
+    // el que no viene se toma de lo guardado
+    if (dto.durationMin !== undefined || dto.totalMin !== undefined) {
+      assertTotalCoversDuration(
+        dto.durationMin ?? current.durationMin,
+        dto.totalMin === undefined ? current.totalMin : dto.totalMin,
+      );
+    }
     return this.prisma.service.update({
       where: { id },
       data: {
@@ -127,6 +136,18 @@ export class ServicesService {
     });
     if (!service) throw new NotFoundException('Servicio no encontrado');
     return service;
+  }
+}
+
+// La duración total (informativa) incluye el tiempo de atención: no puede ser menor
+function assertTotalCoversDuration(
+  durationMin: number,
+  totalMin: number | null | undefined,
+) {
+  if (totalMin != null && totalMin < durationMin) {
+    throw new BadRequestException(
+      'La duración total no puede ser menor que el tiempo de atención',
+    );
   }
 }
 

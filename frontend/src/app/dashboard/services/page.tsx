@@ -13,7 +13,11 @@ import { groupByCategory } from "@/lib/services";
 import type { Service } from "@/lib/types";
 
 const NO_CATEGORY = "Sin categoría";
-const DESCRIPTION_MAX = 300; // igual que SERVICE_DESCRIPTION_MAX en el backend
+// Iguales que en el backend (create-service.dto.ts)
+const DESCRIPTION_MAX = 300;
+const NAME_MAX = 80;
+const CATEGORY_MAX = 40;
+const TOTAL_MAX = 43200; // 30 días, en minutos
 
 const empty = {
   name: "",
@@ -46,9 +50,22 @@ function ServiceFields({
       <Field label="Nombre" className="sm:col-span-2">
         <Input
           value={value.name}
-          onChange={(e) => set({ name: e.target.value })}
+          onChange={(e) => {
+            e.currentTarget.setCustomValidity("");
+            set({ name: e.target.value });
+          }}
           placeholder="Ej. Corte de pelo"
           required
+          maxLength={NAME_MAX}
+          // al menos 2 caracteres sin contar espacios, como valida el backend
+          pattern=".*\S.*\S.*"
+          onInvalid={(e) =>
+            e.currentTarget.setCustomValidity(
+              e.currentTarget.validity.patternMismatch
+                ? "El nombre debe tener al menos 2 caracteres"
+                : "",
+            )
+          }
         />
       </Field>
       <Field label="Categoría" hint={editing ? "Vacío = sin categoría" : undefined}>
@@ -57,6 +74,7 @@ function ServiceFields({
           onChange={(category) => set({ category })}
           options={categories}
           placeholder="Ej. Hombres"
+          maxLength={CATEGORY_MAX}
         />
       </Field>
       <Field label="Tiempo de atención (min)" hint="Bloquea la agenda">
@@ -69,10 +87,15 @@ function ServiceFields({
           required
         />
       </Field>
-      <Field label="Duración total del servicio (min)" hint="Opcional, solo informativa">
+      <Field
+        label="Duración total del servicio (min)"
+        hint="Opcional, solo informativa. Incluye el tiempo de atención"
+      >
         <Input
           type="number"
-          min={5}
+          // no menor que el tiempo de atención (lo revisa también el backend)
+          min={Math.max(5, value.durationMin || 5)}
+          max={TOTAL_MAX}
           value={value.totalMin}
           onChange={(e) => set({ totalMin: e.target.value })}
         />

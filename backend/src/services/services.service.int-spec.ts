@@ -126,6 +126,66 @@ describe('descripción de servicios', () => {
   });
 });
 
+describe('duración total de servicios', () => {
+  it('rechaza crear un servicio con duración total menor que la atención', async () => {
+    await expect(
+      service.create(userId, { name: 'Alisado', durationMin: 60, totalMin: 45 }),
+    ).rejects.toThrow(
+      new BadRequestException(
+        'La duración total no puede ser menor que el tiempo de atención',
+      ),
+    );
+  });
+
+  it('acepta una duración total igual o mayor que la atención', async () => {
+    const igual = await service.create(userId, {
+      name: 'Manicure',
+      durationMin: 40,
+      totalMin: 40,
+    });
+    const mayor = await service.create(userId, {
+      name: 'Permanente',
+      durationMin: 60,
+      totalMin: 180,
+    });
+    expect([igual.totalMin, mayor.totalMin]).toEqual([40, 180]);
+  });
+
+  it('al editar solo uno de los dos, lo compara con el valor guardado', async () => {
+    const s = await service.create(userId, {
+      name: 'Color',
+      durationMin: 30,
+      totalMin: 90,
+    });
+    // subir la atención por sobre el total guardado
+    await expect(
+      service.update(userId, s.id, { durationMin: 120 }),
+    ).rejects.toThrow(BadRequestException);
+    // bajar el total por debajo de la atención guardada
+    await expect(
+      service.update(userId, s.id, { totalMin: 20 }),
+    ).rejects.toThrow(BadRequestException);
+    // quitar el total siempre se puede
+    const updated = await service.update(userId, s.id, { totalMin: null });
+    expect(updated.totalMin).toBeNull();
+  });
+
+  it('activar un servicio no revisa las duraciones guardadas', async () => {
+    // dato antiguo, anterior a esta regla: total menor que la atención
+    const s = await prisma.service.create({
+      data: {
+        name: 'Antiguo',
+        durationMin: 60,
+        totalMin: 30,
+        active: false,
+        businessId,
+      },
+    });
+    const updated = await service.update(userId, s.id, { active: true });
+    expect(updated.active).toBe(true);
+  });
+});
+
 describe('foto de servicios', () => {
   let serviceId: string;
 
