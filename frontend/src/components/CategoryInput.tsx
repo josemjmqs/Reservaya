@@ -14,11 +14,13 @@ export function CategoryInput({
   onChange,
   options,
   placeholder,
+  maxLength,
 }: {
   value: string;
   onChange: (value: string) => void;
   options: string[];
   placeholder?: string;
+  maxLength?: number;
 }) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -69,6 +71,7 @@ export function CategoryInput({
         autoComplete="off"
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(e) => {
           onChange(e.target.value);
           setOpen(true);
