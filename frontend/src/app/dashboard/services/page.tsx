@@ -8,6 +8,7 @@ import { removeServiceImage, uploadServiceImage } from "@/lib/image";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { PriceInput } from "@/components/PriceInput";
 import { CategoryInput } from "@/components/CategoryInput";
+import { DurationInput } from "@/components/DurationInput";
 import { ServiceThumb } from "@/components/ServiceThumb";
 import { groupByCategory } from "@/lib/services";
 import type { Service } from "@/lib/types";
@@ -88,16 +89,15 @@ function ServiceFields({
         />
       </Field>
       <Field
-        label="Duración total del servicio (min)"
+        label="Duración total del servicio"
         hint="Opcional, solo informativa. Incluye el tiempo de atención"
       >
-        <Input
-          type="number"
-          // no menor que el tiempo de atención (lo revisa también el backend)
-          min={Math.max(5, value.durationMin || 5)}
-          max={TOTAL_MAX}
+        <DurationInput
           value={value.totalMin}
-          onChange={(e) => set({ totalMin: e.target.value })}
+          onChange={(totalMin) => set({ totalMin })}
+          // no menor que el tiempo de atención (lo revisa también el backend)
+          minMinutes={Math.max(5, value.durationMin || 5)}
+          maxMinutes={TOTAL_MAX}
         />
       </Field>
       <Field label="Precio (CLP)" hint="Opcional">
