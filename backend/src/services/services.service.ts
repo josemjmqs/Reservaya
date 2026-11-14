@@ -42,7 +42,7 @@ export class ServicesService {
       where: { businessId, role: 'OWNER' },
       select: { id: true },
     });
-    return this.prisma.service.create({
+    const created = await this.prisma.service.create({
       data: {
         ...dto,
         category: normalizeText(dto.category) ?? null,
@@ -51,6 +51,7 @@ export class ServicesService {
         members: { create: owners.map((o) => ({ memberId: o.id })) },
       },
     });
+    return this.withImageUrl(created);
   }
 
   async findAll(userId: string) {
@@ -109,7 +110,7 @@ export class ServicesService {
         dto.totalMin === undefined ? current.totalMin : dto.totalMin,
       );
     }
-    return this.prisma.service.update({
+    const updated = await this.prisma.service.update({
       where: { id },
       data: {
         ...dto,
@@ -117,16 +118,18 @@ export class ServicesService {
         description: normalizeText(dto.description),
       },
     });
+    return this.withImageUrl(updated);
   }
 
   // Borrado lógico: se desactiva para no perder el historial de reservas
   async deactivate(userId: string, id: string) {
     const businessId = await this.getBusinessId(userId);
     await this.findOwned(id, businessId);
-    return this.prisma.service.update({
+    const updated = await this.prisma.service.update({
       where: { id },
       data: { active: false },
     });
+    return this.withImageUrl(updated);
   }
 
   // Si el servicio existe pero es de otro negocio, responde 404 (no revela que existe)

@@ -242,4 +242,28 @@ describe('foto de servicios', () => {
     expect(s.imageUrl).toBeNull();
     expect(bucket.size).toBe(0);
   });
+
+  it('crear responde imageUrl null y nunca la ruta interna del bucket', async () => {
+    const s = await service.create(userId, {
+      name: 'Sin foto',
+      durationMin: 15,
+    });
+    expect(s.imageUrl).toBeNull();
+    expect(s).not.toHaveProperty('imageKey');
+  });
+
+  it('editar y desactivar responden la URL pública, no la ruta interna', async () => {
+    const withPhoto = await service.setImage(userId, serviceId, {
+      buffer: JPG,
+    });
+
+    const updated = await service.update(userId, serviceId, { price: 9000 });
+    expect(updated.imageUrl).toBe(withPhoto.imageUrl);
+    expect(updated).not.toHaveProperty('imageKey');
+
+    const deactivated = await service.deactivate(userId, serviceId);
+    expect(deactivated.active).toBe(false);
+    expect(deactivated.imageUrl).toBe(withPhoto.imageUrl);
+    expect(deactivated).not.toHaveProperty('imageKey');
+  });
 });
