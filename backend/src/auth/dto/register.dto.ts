@@ -20,6 +20,7 @@ const RESERVED_SLUGS = [
   'privacidad',
   'terminos',
   'invitacion',
+  'prueba-celular', // temporal: página de prueba de la barra de abajo
 ];
 
 export class RegisterDto {
